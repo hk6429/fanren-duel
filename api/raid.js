@@ -127,7 +127,7 @@ export default async function handler(req, res) {
       ]);
       const feed = (feedRaw || []).map((s) => (typeof s === "string" ? JSON.parse(s) : s));
       return j(res, 200, {
-        room, hp: Number(hp) || 0, combo: Number(combo) || 0,
+        room, hp: Math.max(0, Number(hp) || 0), combo: Number(combo) || 0,
         players: players || {}, feed,
       });
     }
@@ -135,7 +135,7 @@ export default async function handler(req, res) {
     if (action === "mystate") { // 學生端 poll（輕）
       const hp = await redis.get(rk(code, "hp"));
       return j(res, 200, {
-        status: room.status, maxhp: room.maxhp, hp: Number(hp) || 0,
+        status: room.status, maxhp: room.maxhp, hp: Math.max(0, Number(hp) || 0),
         habits: room.habits, seed: room.seed, boss: room.boss, slayer: room.slayer || "",
       });
     }
