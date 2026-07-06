@@ -64,6 +64,10 @@ h1{font-size:34px;color:var(--gold);letter-spacing:8px;text-shadow:0 0 24px rgba
 .pcard.villain .nm{color:#d98b80;}
 .pcard.sel{outline:3px solid var(--gold);box-shadow:0 0 18px rgba(201,162,74,.5);}
 .pcard.sel2{outline:3px solid var(--blue);box-shadow:0 0 18px rgba(91,143,194,.5);}
+.pcard.locked img{filter:grayscale(1) brightness(.28);}
+.pcard.locked .nm{color:var(--dim);}
+.pcard.locked::after{content:'🔒 戰勝解鎖';position:absolute;top:10px;left:0;right:0;
+ text-align:center;font-size:12px;color:var(--gold);letter-spacing:1px;text-shadow:1px 1px 0 #000;}
 /* ── 戰場 ── */
 #battle{display:none;flex:1;flex-direction:column;}
 #battle.on{display:flex;}
@@ -190,6 +194,10 @@ h1{font-size:34px;color:var(--gold);letter-spacing:8px;text-shadow:0 0 24px rgba
 #result .win{font-size:48px;color:var(--gold);letter-spacing:8px;text-shadow:0 0 28px rgba(201,162,74,.55),2px 2px 0 #000;}
 #result.lose .win{color:var(--red);text-shadow:0 0 28px rgba(194,91,78,.6),2px 2px 0 #000;}
 #result.lose .rbg{filter:grayscale(.45) brightness(.8);}
+.badges{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;}
+.badge{font-size:15px;color:var(--gold);border:1px solid var(--gold);border-radius:999px;
+ padding:5px 16px;background:rgba(13,15,18,.72);letter-spacing:1px;}
+.badge.grey{color:var(--dim);border-color:var(--line);}
 #result .quote{max-width:520px;text-align:center;color:var(--dim);line-height:1.8;font-size:15px;}
 .statline{font-size:14px;color:var(--dim);}
 /* 靜音鈕 */
@@ -216,6 +224,7 @@ h1{font-size:34px;color:var(--gold);letter-spacing:8px;text-shadow:0 0 24px rgba
 <!-- 模式選擇 -->
 <div class="screen" id="home">
   <h1 style="font-size:26px;letter-spacing:6px;">選擇對戰模式</h1>
+  <div class="sub" id="rankLine"></div>
   <div class="mcards" id="modeRow">
     <button class="mcard gold" onclick="startPick('2p',null,'tb')">
       <img src="img/cutin/murongyan_ult.jpg" alt="" onerror="this.remove()">
@@ -269,10 +278,11 @@ h1{font-size:34px;color:var(--gold);letter-spacing:8px;text-shadow:0 0 24px rgba
 <div class="screen" id="result">
   <div class="rbg" id="resBg"></div>
   <div class="win" id="winTxt"></div>
+  <div class="badges" id="resBadges"></div>
   <div class="quote" id="winQuote"></div>
   <div class="statline" id="statTxt"></div>
   <div class="row">
-    <button class="bigbtn gold" onclick="rematch()">再戰一場</button>
+    <button class="bigbtn gold" id="rematchBtn" onclick="rematch()">再戰一場</button>
     <button class="bigbtn" onclick="goHome()">回到首頁</button>
   </div>
 </div>
@@ -347,6 +357,7 @@ const Snd={ac:null,muted:false,tracks:null,cur:null,want:'op',loopT:null,
  // 依畫面切曲：menu=入陣主題（Golden Temple Oath）、battle=對戰 BGM（Dragon Ink Duel）、win=勝利凱歌（Jade Victory Horn）
  music(w){this.want=w;if(!this.tracks)return;const t=this.tracks[w];
   if(this.cur&&this.cur!==t){this.cur.pause();this.cur.currentTime=0;}
+  try{t.playbackRate=1;}catch(e){}
   this.stopLoop();if(this.muted)return;
   t.play().then(()=>{this.cur=t;}).catch(()=>{this.cur=null;if(w==='battle')this.startLoop();});},
  // 五聲音階（宮商角徵羽）程序化配樂：古箏式撥弦＋低音鼓點
@@ -393,25 +404,42 @@ function show(id){['gate','home','pick','result'].forEach(s=>$(s).classList.togg
 function goHome(){clearTimeout(G&&G.aiTimer);G=null;homeBack();show('home');}
 function enterGame(){homeBack();show('home');}
 function homeBack(){$('modeRow').style.display='flex';$('diffRow').style.display='none';
- $('homeBack').textContent='回 入 口';$('homeBack').onclick=()=>show('gate');}
+ $('homeBack').textContent='回 入 口';$('homeBack').onclick=()=>show('gate');
+ const pw=Store.get('duel_pwins',0),nv=Object.keys(ROSTER).filter(k=>!ROSTER[k].hero&&!unlocked(k)).length;
+ const ri=rankInfo(pw);
+ $('rankLine').textContent=pw>0
+  ?`修行段位：${ri.cur[1]} · 人機 ${pw} 勝`+(nv?` · 尚有 ${nv} 名反派待收服`:' · 反派全數收服！')
+  :'在「挑戰電腦」戰勝反派，即可解鎖使用該角色';}
 function pickDiff(){$('modeRow').style.display='none';$('diffRow').style.display='flex';
  $('homeBack').textContent='返 回';$('homeBack').onclick=homeBack;}
 /* ═══════════ 選角 ═══════════ */
+/* ── 進度存檔（解鎖／段位／連勝）── */
+const Store={get(k,d){try{const v=JSON.parse(localStorage.getItem(k));return v==null?d:v;}catch(e){return d;}},
+ set(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}};
+function unlocked(k){return !!ROSTER[k].hero||!!Store.get('duel_unlock',{})[k];}
+const RANKS=[[0,'煉氣'],[2,'築基'],[5,'金丹'],[9,'元嬰'],[14,'化神'],[20,'宗師']];
+function rankInfo(w){let cur=RANKS[0],next=null;
+ for(const r of RANKS){if(w>=r[0])cur=r;else{next=r;break;}}return{cur,next};}
 function startPick(mode,diff,layout){pickState={mode,diff,layout:layout||'tb',sel:[null,null],who:0};
  const g=$('pickGrid');g.innerHTML='';
  Object.entries(ROSTER).forEach(([k,c])=>{
-  const d=document.createElement('div');d.className='pcard'+(c.hero?'':' villain');d.dataset.k=k;
+  const lk=!unlocked(k);
+  const d=document.createElement('div');d.className='pcard'+(c.hero?'':' villain')+(lk?' locked':'');d.dataset.k=k;
   d.innerHTML=`<img src="img/chars/${k}.jpg" onerror="this.outerHTML='<div class=ph>${c.nm}</div>'">
    <div class="nm">${c.nm}<br><span style="font-size:11px;color:var(--dim)">${c.st}</span></div>`;
-  d.onclick=()=>pickChar(k,d);g.appendChild(d);});
+  d.onclick=lk?()=>{$('pickHint').textContent=`🔒 ${c.nm} 尚未解鎖——到「挑戰電腦」戰勝他，即可收入麾下`;}
+   :()=>pickChar(k,d);
+  g.appendChild(d);});
  $('pickHint').textContent=mode==='2p'?'玩家一 選角（金框）':'選擇你的角色（金框）';
  $('fightBtn').disabled=true;show('pick');}
 function pickChar(k,el){const ps=pickState;
  if(ps.who===0){ps.sel[0]=k;document.querySelectorAll('.pcard').forEach(x=>x.classList.remove('sel'));
   el.classList.add('sel');
-  if(ps.mode==='1p'){ // 電腦優先持反派
+  if(ps.mode==='1p'){ // 電腦優先持「尚未解鎖」的反派，推進收集
    const vil=Object.keys(ROSTER).filter(x=>!ROSTER[x].hero&&x!==k);
-   ps.sel[1]=vil[Math.floor(Math.random()*vil.length)];
+   const lockedV=vil.filter(x=>!unlocked(x));
+   const pool=lockedV.length?lockedV:vil;
+   ps.sel[1]=pool[Math.floor(Math.random()*pool.length)];
    $('pickHint').textContent=`你：${ROSTER[k].nm} ⚔ 電腦：${ROSTER[ps.sel[1]].nm}（點「開戰」）`;
    $('fightBtn').disabled=false;}
   else{ps.who=1;$('pickHint').textContent='玩家二 選角（藍框）';}}
@@ -551,7 +579,10 @@ function renderAll(){if(!G)return;
   else if(G.phase==='act')body=figsHTML(s)+hudHTML(s)+(G.actor===s?actHTML(s):
    `<div class="wait">${ROSTER[G.p[1-s].key].nm} 答對，正在選招——<br>穩住道心，接招！</div>`);
   else body=figsHTML(s)+hudHTML(s)+`<div class="wait"></div>`;
-  h.innerHTML=body;});}
+  h.innerHTML=body;});
+ // 雙方殘血 → BGM 加速（絕境張力）
+ if(Snd.tracks&&Snd.tracks.battle){const hot=G.p[0].hp>0&&G.p[1].hp>0&&G.p[0].hp<=30&&G.p[1].hp<=30;
+  try{Snd.tracks.battle.playbackRate=hot?1.12:1;}catch(e){}}}
 function setMsg(side,html){const m=$('msg'+side);if(m)m.innerHTML=html;}
 /* ═══════════ 勝負 ═══════════ */
 function checkEnd(){if(!G)return false;const dead=G.p.findIndex(f=>f.hp<=0);
@@ -562,6 +593,27 @@ function checkEnd(){if(!G)return false;const dead=G.p.findIndex(f=>f.hp<=0);
  $('resBg').style.backgroundImage=`url('img/cutin/${wf.key}_ult.jpg')`;
  $('result').classList.toggle('lose',lose1p);
  $('winTxt').textContent=lose1p?`敗於 ${ch.nm}`:`${ch.nm} 勝`;
+ // ── 八角迴圈：絕處逢生／連勝／解鎖／段位 ──
+ const badges=[];let rTxt='再戰一場';
+ if(wf.hp<=15)badges.push('⚡ 絕處逢生');
+ if(G.mode==='1p'){
+  if(dead===1){ // 玩家獲勝
+   const ws=Store.get('duel_wstreak',0)+1;Store.set('duel_wstreak',ws);
+   const pw=Store.get('duel_pwins',0)+1;Store.set('duel_pwins',pw);
+   if(ws>=2){badges.push(`🔥 ${ws} 連勝`);rTxt='守住連勝，再戰！';}
+   const vk=G.p[1].key;
+   if(!ROSTER[vk].hero){const u=Store.get('duel_unlock',{});
+    if(!u[vk]){u[vk]=1;Store.set('duel_unlock',u);badges.push(`🔓 解鎖新角色：${ROSTER[vk].nm}`);}}
+   const ri=rankInfo(pw);
+   badges.push(ri.next?`段位 ${ri.cur[1]} ｜ 再 ${ri.next[0]-pw} 勝晉升 ${ri.next[1]}`
+    :`段位 ${ri.cur[1]}（登峰造極）`);
+  }else{
+   const ws=Store.get('duel_wstreak',0);
+   if(ws>=2)badges.push(`💔 ${ws} 連勝中斷`);
+   Store.set('duel_wstreak',0);rTxt='雪恥再戰';
+  }}
+ $('resBadges').innerHTML=badges.map(b=>`<span class="badge">${b}</span>`).join('');
+ $('rematchBtn').textContent=rTxt;
  $('winQuote').textContent=WIN_QUOTES[Math.floor(Math.random()*WIN_QUOTES.length)];
  const st=G.p.map((f,i)=>{const tot=f.stats.right+f.stats.wrong;
   return `${ROSTER[f.key].nm}：答對 ${f.stats.right}/${tot}，最高連對 ${f.stats.maxStreak}`;}).join('　｜　');
