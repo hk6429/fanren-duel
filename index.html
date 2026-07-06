@@ -78,11 +78,15 @@ h1{font-size:34px;color:var(--gold);letter-spacing:8px;text-shadow:0 0 24px rgba
 #battle.lr .qtext{font-size:19px;}
 #battle.lr .qopts{grid-template-columns:1fr;} /* 半寬版面改單欄，選項不擠 */
 #battle.lr .qopt{font-size:17px;min-height:56px;}
-/* 左右模式＝格鬥對峙：只留己方立繪、靠中線面對面（half0=左、half1=右） */
-#battle.lr .fig{height:60%;bottom:0;}
-#battle.lr .fig.nostand{height:56%;
+/* 左右模式＝格鬥對峙：只留己方立繪、靠中線面對面（half0=左、half1=右）
+   答題區讓出內側 30%，立繪整條直立完整可見 */
+#battle.lr .fig{height:88%;width:36%;bottom:0;aspect-ratio:auto;object-fit:contain;
+ object-position:bottom center;-webkit-mask-image:none;mask-image:none;}
+#battle.lr .fig.nostand{width:auto;height:56%;aspect-ratio:3/4;object-fit:cover;
  -webkit-mask-image:radial-gradient(ellipse 62% 58% at 50% 62%,#000 38%,transparent 74%);
  mask-image:radial-gradient(ellipse 62% 58% at 50% 62%,#000 38%,transparent 74%);}
+#battle.lr .half.bot .qarea,#battle.lr .half.bot .acts,#battle.lr .half.bot .wait{margin-right:35%;}
+#battle.lr .half.top .qarea,#battle.lr .half.top .acts,#battle.lr .half.top .wait{margin-left:35%;}
 #battle.lr .fig.foe{display:none;}
 #battle.lr .half.bot .fig.me{left:auto;right:-6%;}
 #battle.lr .half.top .fig.me{left:-6%;right:auto;transform:scaleX(-1);}
