@@ -75,22 +75,32 @@ h1{font-size:34px;color:var(--gold);letter-spacing:8px;text-shadow:0 0 24px rgba
 #battle.lr{flex-direction:row-reverse;} /* half1 在右、half0 在左 */
 #battle.lr .half{border-bottom:none;border-left:1px solid var(--line);}
 #battle.lr .half:last-child{border-left:none;}
-#battle.lr .qtext{font-size:15px;}
+#battle.lr .qtext{font-size:19px;}
 #battle.lr .qopts{grid-template-columns:1fr;} /* 半寬版面改單欄，選項不擠 */
-#battle.lr .qopt{font-size:14px;min-height:48px;}
+#battle.lr .qopt{font-size:17px;min-height:56px;}
+#battle.lr .fig{height:46%;}
 #battle.lr .acts{grid-template-columns:1fr;}
 #battle.lr .cutin .mvname{font-size:30px;}
 #battle.lr .cutin.ult .mvname{font-size:36px;}
 /* 1P 模式：上半縮小成狀態列 */
 #battle.solo .half.top{flex:0 0 88px;}
 #battle.solo .half.bot{flex:1;}
+/* 立繪駐場：己方左、對手右，水墨暈邊融入背景 */
+.figs{position:absolute;inset:0;z-index:0;pointer-events:none;}
+.fig{position:absolute;bottom:1%;height:72%;aspect-ratio:3/4;object-fit:cover;opacity:.95;
+ -webkit-mask-image:radial-gradient(ellipse 60% 58% at 50% 48%,#000 50%,transparent 84%);
+ mask-image:radial-gradient(ellipse 60% 58% at 50% 48%,#000 50%,transparent 84%);}
+.fig.me{left:0;}
+.fig.foe{right:0;transform:scaleX(-1);}
+#battle.solo .half.top .figs{display:none;}
+.hud,.qarea,.acts,.wait{position:relative;z-index:1;}
 .hud{display:flex;align-items:center;gap:10px;flex:0 0 auto;}
 .hud .face{width:52px;height:52px;border-radius:10px;object-fit:cover;border:1px solid var(--line);background:var(--bg2);}
 .hud .facetxt{width:52px;height:52px;border-radius:10px;border:1px solid var(--line);background:var(--bg2);
  display:flex;align-items:center;justify-content:center;font-size:13px;color:var(--dim);letter-spacing:1px;}
 .hud .col{flex:1;min-width:0;}
-.hud .nm{font-size:15px;letter-spacing:2px;}
-.hud .nm .st{font-size:11px;color:var(--dim);margin-left:8px;}
+.hud .nm{font-size:18px;letter-spacing:2px;}
+.hud .nm .st{font-size:13px;color:var(--dim);margin-left:8px;}
 .bar{height:13px;border-radius:7px;background:#101216;border:1px solid var(--line);overflow:hidden;margin-top:3px;position:relative;}
 .bar .fill{height:100%;border-radius:7px;transition:width .5s cubic-bezier(.2,.8,.3,1);}
 .bar.hp .fill{background:linear-gradient(90deg,#7fae6f,var(--jade));}
@@ -103,25 +113,25 @@ h1{font-size:34px;color:var(--gold);letter-spacing:8px;text-shadow:0 0 24px rgba
 .buff{font-size:11px;color:var(--purp);height:14px;}
 /* 題目區 */
 .qarea{flex:1;display:flex;flex-direction:column;justify-content:center;gap:8px;min-height:0;}
-.qtext{font-size:16px;line-height:1.5;text-align:center;padding:2px 6px;}
+.qtext{font-size:21px;line-height:1.5;text-align:center;padding:2px 6px;}
 .qopts{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
-.qopt{min-height:56px;font-size:15px;padding:8px 10px;line-height:1.35;}
+.qopt{min-height:64px;font-size:19px;padding:10px 12px;line-height:1.35;}
 .qopt.dead{opacity:.4;pointer-events:none;}
 .qopt.right{border-color:var(--jade);color:var(--jade);}
 .qopt.wrong{border-color:var(--red);color:var(--red);}
-.msg{text-align:center;font-size:13px;color:var(--dim);min-height:34px;line-height:1.4;padding:0 8px;}
+.msg{text-align:center;font-size:16px;color:var(--dim);min-height:38px;line-height:1.4;padding:0 8px;position:relative;z-index:1;}
 .msg .tag{color:var(--gold);}
 /* 行動選單 */
 .acts{display:none;grid-template-columns:1fr 1fr;gap:10px;flex:1;align-content:center;}
 .acts.on{display:grid;}
-.act{min-height:64px;font-size:17px;letter-spacing:2px;line-height:1.3;}
-.act small{display:block;font-size:11px;color:var(--dim);letter-spacing:0;}
+.act{min-height:70px;font-size:20px;letter-spacing:2px;line-height:1.3;}
+.act small{display:block;font-size:13px;color:var(--dim);letter-spacing:0;}
 .act.ult{border-color:var(--gold);color:var(--gold);}
 .act.ult:disabled{opacity:.35;color:var(--dim);border-color:var(--line);}
 .act.charge{border-color:var(--blue);}
 /* 等待 / AI 狀態 */
 .wait{flex:1;display:flex;align-items:center;justify-content:center;color:var(--dim);
- font-size:15px;letter-spacing:3px;text-align:center;line-height:1.6;}
+ font-size:18px;letter-spacing:3px;text-align:center;line-height:1.6;}
 /* ── 特寫演出 ── */
 .cutin{position:absolute;inset:0;z-index:20;display:none;align-items:center;justify-content:center;
  background:rgba(8,9,11,.93);overflow:hidden;}
@@ -488,16 +498,19 @@ function actHTML(side){const f=G.p[side],ch=ROSTER[f.key];
   <button class="act charge" onclick="act(${side},'charge')">🌀 集氣<small>氣＋34</small></button>
   <button class="act ult" onclick="act(${side},'ult')" ${f.qi>=100?'':'disabled'}>🔥 ${ch.ult.n}<small>大絕 · 傷害 ${ch.ult.d}（需集滿氣）</small></button>
  </div>`;}
+function figsHTML(side){return `<div class="figs">
+  <img class="fig me" src="img/chars/${G.p[side].key}.jpg" onerror="this.remove()">
+  <img class="fig foe" src="img/chars/${G.p[1-side].key}.jpg" onerror="this.remove()"></div>`;}
 function renderAll(){if(!G)return;
  [0,1].forEach(s=>{const h=$('half'+s);let body='';
   if(G.mode==='1p'&&s===1){ // 電腦狀態列
    body=hudHTML(1)+(G.phase==='q'?`<div class="wait" style="flex:0">🤖 對手思索中……</div>`:
     G.phase==='act'&&G.actor===1?`<div class="wait" style="flex:0">🤖 對手獲得攻擊權！</div>`:'');
    h.innerHTML=body;return;}
-  if(G.phase==='q')body=hudHTML(s)+(G.q?qHTML(s):'');
-  else if(G.phase==='act')body=hudHTML(s)+(G.actor===s?actHTML(s):
+  if(G.phase==='q')body=figsHTML(s)+hudHTML(s)+(G.q?qHTML(s):'');
+  else if(G.phase==='act')body=figsHTML(s)+hudHTML(s)+(G.actor===s?actHTML(s):
    `<div class="wait">${ROSTER[G.p[1-s].key].nm} 答對，正在選招——<br>穩住道心，接招！</div>`);
-  else body=hudHTML(s)+`<div class="wait"></div>`;
+  else body=figsHTML(s)+hudHTML(s)+`<div class="wait"></div>`;
   h.innerHTML=body;});}
 function setMsg(side,html){const m=$('msg'+side);if(m)m.innerHTML=html;}
 /* ═══════════ 勝負 ═══════════ */
