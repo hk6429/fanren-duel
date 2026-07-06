@@ -234,21 +234,25 @@ h1{font-size:34px;color:var(--gold);letter-spacing:8px;text-shadow:0 0 24px rgba
       <img src="img/cutin/shenmu_ult.jpg" alt="" onerror="this.remove()">
       <span class="lb">↔️ 雙人 · 並肩<small>左右分屏 · 同向而坐</small></span>
     </button>
-    <button class="mcard" onclick="pickDiff()">
+    <button class="mcard" onclick="pickDiff('1p')">
       <img src="img/cutin/xuemo_ult.jpg" alt="" onerror="this.remove()">
       <span class="lb">🤖 挑戰電腦<small>簡單 / 中等 / 困難</small></span>
     </button>
+    <button class="mcard" onclick="pickDiff('gt')">
+      <img src="img/cutin/licanglan_ult.jpg" alt="" onerror="this.remove()">
+      <span class="lb">⛰️ 闖關擂臺<small>一條命連破五關 · 場間三選一恩賜</small></span>
+    </button>
   </div>
   <div class="mcards" id="diffRow" style="display:none">
-    <button class="mcard" onclick="startPick('1p','easy')">
+    <button class="mcard" onclick="startPick(diffMode,'easy')">
       <img src="img/chars/shangyu.jpg" alt="" onerror="this.remove()">
       <span class="lb">簡單<small>電腦答對率低 · 出手慢</small></span>
     </button>
-    <button class="mcard" onclick="startPick('1p','mid')">
+    <button class="mcard" onclick="startPick(diffMode,'mid')">
       <img src="img/chars/xueshashi.jpg" alt="" onerror="this.remove()">
       <span class="lb">中等<small>勢均力敵</small></span>
     </button>
-    <button class="mcard" onclick="startPick('1p','hard')">
+    <button class="mcard" onclick="startPick(diffMode,'hard')">
       <img src="img/chars/xuemo.jpg" alt="" onerror="this.remove()">
       <span class="lb">困難<small>神速搶答 · 會留氣放大絕</small></span>
     </button>
@@ -279,9 +283,11 @@ h1{font-size:34px;color:var(--gold);letter-spacing:8px;text-shadow:0 0 24px rgba
   <div class="rbg" id="resBg"></div>
   <div class="win" id="winTxt"></div>
   <div class="badges" id="resBadges"></div>
+  <div class="quote" id="charQuote" style="color:var(--gold)"></div>
   <div class="quote" id="winQuote"></div>
   <div class="statline" id="statTxt"></div>
-  <div class="row">
+  <div class="row" id="boonRow" style="display:none"></div>
+  <div class="row" id="resRow">
     <button class="bigbtn gold" id="rematchBtn" onclick="rematch()">再戰一場</button>
     <button class="bigbtn" onclick="repick()">換角色</button>
     <button class="bigbtn" onclick="goHome()">回到首頁</button>
@@ -402,16 +408,21 @@ const $=id=>document.getElementById(id);
 function show(id){['gate','home','pick','result'].forEach(s=>$(s).classList.toggle('on',s===id));
  $('battle').classList.toggle('on',id==='battle');
  Snd.music(id==='battle'?'battle':id==='result'?'win':id==='gate'?'op':'menu');}
-function goHome(){clearTimeout(G&&G.aiTimer);G=null;homeBack();show('home');}
+function goHome(){clearTimeout(G&&G.aiTimer);G=null;Run=null;homeBack();show('home');}
 function enterGame(){homeBack();show('home');}
 function homeBack(){$('modeRow').style.display='flex';$('diffRow').style.display='none';
  $('homeBack').textContent='回 入 口';$('homeBack').onclick=()=>show('gate');
  const pw=Store.get('duel_pwins',0),nv=Object.keys(ROSTER).filter(k=>!ROSTER[k].hero&&!unlocked(k)).length;
  const ri=rankInfo(pw);
- $('rankLine').textContent=pw>0
+ const gb=Store.get('duel_gt_best',0);
+ $('rankLine').innerHTML=(pw>0
   ?`修行段位：${ri.cur[1]} · 人機 ${pw} 勝`+(nv?` · 尚有 ${nv} 名反派待收服`:' · 反派全數收服！')
-  :'在「挑戰電腦」戰勝反派，即可解鎖使用該角色';}
-function pickDiff(){$('modeRow').style.display='none';$('diffRow').style.display='flex';
+  :'在「挑戰電腦」戰勝反派，即可解鎖使用該角色')
+  +(gb?` · 擂臺最佳 ${gb} 關`:'')
+  +`<br><span style="color:var(--gold)">⚡ 今日天機：${MUT.n}</span>——${MUT.d}`;}
+let diffMode='1p';
+function pickDiff(mode){diffMode=mode||'1p';
+ $('modeRow').style.display='none';$('diffRow').style.display='flex';
  $('homeBack').textContent='返 回';$('homeBack').onclick=homeBack;}
 /* ═══════════ 選角 ═══════════ */
 /* ── 進度存檔（解鎖／段位／連勝）── */
@@ -421,6 +432,39 @@ function unlocked(k){return !!ROSTER[k].hero||!!Store.get('duel_unlock',{})[k];}
 const RANKS=[[0,'煉氣'],[2,'築基'],[5,'金丹'],[9,'元嬰'],[14,'化神'],[20,'宗師']];
 function rankInfo(w){let cur=RANKS[0],next=null;
  for(const r of RANKS){if(w>=r[0])cur=r;else{next=r;break;}}return{cur,next};}
+const solo=m=>m==='1p'||m==='gt'; // 人機類模式（AI 出戰）
+/* ── 角色剋制（九人環：各剋一人，傷害 +3）── */
+const CTR={xiaoyi:'shinian',shenmu:'shangyu',murongyan:'xueshashi',bairuoxue:'licanglan',
+ xuemo:'shenmu',shangyu:'murongyan',xueshashi:'xiaoyi',licanglan:'xuemo',shinian:'bairuoxue'};
+/* ── 勝敗台詞 ── */
+const QUOTES={
+ xiaoyi:{w:'劍是醉的，心是醒的。',l:'今日之敗，記在明日的劍上。'},
+ shenmu:{w:'醫人先醫己，勝人先勝心。',l:'傷可以治，心不能亂。'},
+ murongyan:{w:'億萬個念頭，我只選一個。',l:'輸一陣，不輸一世。'},
+ bairuoxue:{w:'萬毒不侵的，是我選好的心。',l:'雪落無聲，我記住了。'},
+ xuemo:{w:'百年道行，豈是兒戲！',l:'不可能……我的血煞之核！'},
+ shangyu:{w:'同歸於盡，也是一種贏法。',l:'毒不倒你……有點意思。'},
+ xueshashi:{w:'幡下無聲，勝負已分。',l:'銀面之下，無人見我敗相。'},
+ licanglan:{w:'劍出太虛，止戈為武。',l:'敗給你，不冤。'},
+ shinian:{w:'吼——四臂撼地，誰與爭鋒！',l:'怨魂不散……再來……'}};
+/* ── 每日天機（日期決定當日變異規則）── */
+const MUTS=[
+ {k:'qi',n:'靈氣充沛',d:'集氣效果 50 → 70'},
+ {k:'thunder',n:'天雷助威',d:'大絕傷害 +10'},
+ {k:'venom',n:'毒霧瀰漫',d:'中毒傷害加倍'},
+ {k:'spring',n:'回春靈雨',d:'回血效果加倍'},
+ {k:'flow',n:'訣意如虹',d:'連對加成 +2 → +4'},
+ {k:'wind',n:'罡風引氣',d:'普攻集氣 12 → 20'}];
+function todayMut(){const t=new Date();
+ return MUTS[(t.getFullYear()*372+(t.getMonth()+1)*31+t.getDate())%MUTS.length];}
+let MUT=todayMut();
+/* ── 闖關擂臺（一條命連破五關）── */
+let Run=null; // {stage,order,hp,qi,dmg}
+const BOONS=[
+ {ic:'🩹',n:'回春丹',d:'回血 25',f:()=>{Run.hp=Math.min(100,Run.hp+25);}},
+ {ic:'🌀',n:'聚氣丹',d:'氣 +50',f:()=>{Run.qi=Math.min(100,Run.qi+50);}},
+ {ic:'⚔️',n:'訣意加持',d:'下一場攻擊 +3',f:()=>{Run.dmg=3;}}];
+function pickBoon(i){BOONS[i].f();startBattle();}
 function startPick(mode,diff,layout){pickState={mode,diff,layout:layout||'tb',sel:[null,null],who:0};
  const g=$('pickGrid');g.innerHTML='';
  Object.entries(ROSTER).forEach(([k,c])=>{
@@ -431,7 +475,9 @@ function startPick(mode,diff,layout){pickState={mode,diff,layout:layout||'tb',se
   d.onclick=lk?()=>{$('pickHint').textContent=`🔒 ${c.nm} 尚未解鎖——到「挑戰電腦」戰勝他，即可收入麾下`;}
    :()=>pickChar(k,d);
   g.appendChild(d);});
- $('pickHint').textContent=mode==='2p'?'玩家一 選角（金框）':'選擇你的角色（金框）';
+ if(mode==='gt')Run=null; // 重新選角＝重開一輪闖關
+ $('pickHint').textContent=mode==='2p'?'玩家一 選角（金框）':
+  mode==='gt'?'選擇闖關角色——一條命連破五關（金框）':'選擇你的角色（金框）';
  $('fightBtn').disabled=true;show('pick');}
 function pickChar(k,el){const ps=pickState;
  if(ps.who===0){ps.sel[0]=k;document.querySelectorAll('.pcard').forEach(x=>x.classList.remove('sel'));
@@ -441,22 +487,38 @@ function pickChar(k,el){const ps=pickState;
    const lockedV=vil.filter(x=>!unlocked(x));
    const pool=lockedV.length?lockedV:vil;
    ps.sel[1]=pool[Math.floor(Math.random()*pool.length)];
-   $('pickHint').textContent=`你：${ROSTER[k].nm} ⚔ 電腦：${ROSTER[ps.sel[1]].nm}（點「開戰」）`;
+   $('pickHint').textContent=`你：${ROSTER[k].nm} ⚔ 電腦：${ROSTER[ps.sel[1]].nm}${ctrNote(k,ps.sel[1])}（點「開戰」）`;
+   $('fightBtn').disabled=false;}
+  else if(ps.mode==='gt'){
+   $('pickHint').textContent=`${ROSTER[k].nm} 出戰——連破五關，血量不回滿（點「開戰」）`;
    $('fightBtn').disabled=false;}
   else{ps.who=1;$('pickHint').textContent='玩家二 選角（藍框）';}}
  else{if(k===ps.sel[0]){return;}ps.sel[1]=k;
   document.querySelectorAll('.pcard').forEach(x=>x.classList.remove('sel2'));
   el.classList.add('sel2');
-  $('pickHint').textContent=`${ROSTER[ps.sel[0]].nm} ⚔ ${ROSTER[ps.sel[1]].nm}（點「開戰」）`;
+  $('pickHint').textContent=`${ROSTER[ps.sel[0]].nm} ⚔ ${ROSTER[ps.sel[1]].nm}${ctrNote(ps.sel[0],ps.sel[1])}（點「開戰」）`;
   $('fightBtn').disabled=false;}}
+function ctrNote(a,b){
+ if(CTR[a]===b)return `｜⚔ ${ROSTER[a].nm} 剋 ${ROSTER[b].nm}，傷害+3`;
+ if(CTR[b]===a)return `｜⚔ ${ROSTER[b].nm} 剋 ${ROSTER[a].nm}，傷害+3`;
+ return '';}
 /* ═══════════ 開戰 ═══════════ */
 function newFighter(key){return {key,hp:100,qi:0,streak:0,poison:0,weak:false,
  stats:{right:0,wrong:0,maxStreak:0}};}
 function startBattle(){const ps=pickState;
+ if(ps.mode==='gt'){ // 闖關：初始化本輪對手序列（血魔老祖壓軸）
+  if(!Run){const vil=Object.keys(ROSTER).filter(k=>!ROSTER[k].hero&&k!==ps.sel[0]);
+   const order=shuffle(vil.filter(k=>k!=='xuemo'));
+   if(vil.includes('xuemo'))order.push('xuemo');
+   Run={stage:0,order,hp:100,qi:0,dmg:0};}
+  ps.sel[1]=Run.order[Run.stage];}
  G={mode:ps.mode,diff:ps.diff,layout:ps.layout||'tb',p:[newFighter(ps.sel[0]),newFighter(ps.sel[1])],
   deck:shuffle([...Array(DUEL_QS.length).keys()]),q:null,locked:[false,false],phase:'q',aiTimer:null};
- if(ps.mode==='1p')G.layout='lr'; // 人機對戰一律左右分屏
- $('battle').classList.toggle('solo',ps.mode==='1p');
+ if(ps.mode==='gt'){G.p[0].hp=Run.hp;G.p[0].qi=Run.qi;
+  G.dmgBoon=Run.dmg||0;Run.dmg=0;
+  G.stageBoost=Run.stage*0.04;} // 越後面的關，AI 答得越準
+ if(solo(ps.mode))G.layout='lr'; // 人機對戰一律左右分屏
+ $('battle').classList.toggle('solo',solo(ps.mode));
  $('battle').classList.toggle('lr',G.layout==='lr');
  $('half1').classList.toggle('flip',ps.mode==='2p'&&G.layout==='tb');
  show('battle');nextQuestion();}
@@ -465,17 +527,19 @@ function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random
 function nextQuestion(){if(!G)return;
  // 毒發：每輪新題前結算（先渲染再彈傷害數字，避免被重繪沖掉）
  const ticks=[];
- G.p.forEach((f,i)=>{if(f.poison>0){f.poison--;f.hp=Math.max(0,f.hp-4);ticks.push(i);}});
- renderAll();ticks.forEach(i=>popDmg(i,4,false,'☠'));
+ const ptick=MUT.k==='venom'?8:4;
+ G.p.forEach((f,i)=>{if(f.poison>0){f.poison--;f.hp=Math.max(0,f.hp-ptick);ticks.push(i);}});
+ renderAll();ticks.forEach(i=>popDmg(i,ptick,false,'☠'));
  if(checkEnd())return;
  if(!G.deck.length)G.deck=shuffle([...Array(DUEL_QS.length).keys()]);
  G.q=DUEL_QS[G.deck.pop()];G.locked=[false,false];G.phase='q';
  renderAll();
- if(G.mode==='1p')armAI();}
+ if(solo(G.mode))armAI();}
 function armAI(){clearTimeout(G.aiTimer);const cfg=AI_CFG[G.diff];
  const t=cfg.tmin+Math.random()*(cfg.tmax-cfg.tmin);
+ const acc=Math.min(.95,cfg.acc+(G.stageBoost||0));
  G.aiTimer=setTimeout(()=>{if(!G||G.phase!=='q'||G.locked[1])return;
-  if(Math.random()<cfg.acc)answer(1,G.q.c.findIndex(c=>c.q===0));
+  if(Math.random()<acc)answer(1,G.q.c.findIndex(c=>c.q===0));
   else{const wrongs=G.q.c.map((c,i)=>i).filter(i=>G.q.c[i].q!==0);
    answer(1,wrongs[Math.floor(Math.random()*wrongs.length)]);}},t);}
 /* ═══════════ 作答 ═══════════ */
@@ -485,7 +549,7 @@ function answer(side,idx){if(!G||G.phase!=='q'||G.locked[side])return;
   f.stats.right++;f.streak++;f.stats.maxStreak=Math.max(f.stats.maxStreak,f.streak);
   Snd.play('right');G.phase='act';G.actor=side;
   markOpt(side,idx,true);setTimeout(()=>renderAll(),450);
-  if(G.mode==='1p'&&side===1)setTimeout(()=>aiAct(),1100);}
+  if(solo(G.mode)&&side===1)setTimeout(()=>aiAct(),1100);}
  else{f.stats.wrong++;f.streak=0;G.locked[side]=true;Snd.play('wrong');
   markOpt(side,idx,false);setMsg(side,`<span class="tag">${c.tag}</span>`);
   document.querySelectorAll(`#half${side} .qopt`).forEach(b=>b.classList.add('dead'));
@@ -500,18 +564,22 @@ function act(side,kind){if(!G||G.phase!=='act'||G.actor!==side)return;
  const me=G.p[side],op=G.p[1-side],ch=ROSTER[me.key];
  if(kind==='ult'&&me.qi<100)return;
  G.phase='anim';
- if(kind==='charge'){me.qi=Math.min(100,me.qi+50);Snd.play('charge');
+ if(kind==='charge'){me.qi=Math.min(100,me.qi+(MUT.k==='qi'?70:50));Snd.play('charge');
   cutin(side,ch,'集氣 · 氣走周天','charge',()=>endTurn());return;}
  const mv=ch[kind];let dmg=mv.d;
- if(me.streak>=3)dmg+=2;
+ if(kind==='ult'&&MUT.k==='thunder')dmg+=10;
+ const ctr=CTR[me.key]===op.key;if(ctr)dmg+=3;
+ if(G.dmgBoon&&side===0)dmg+=G.dmgBoon;
+ if(me.streak>=3)dmg+=(MUT.k==='flow'?4:2);
  if(me.weak){dmg=Math.ceil(dmg/2);me.weak=false;}
  if(kind==='ult'){me.qi=0;Snd.play('ult');Snd.sting();}else Snd.play('atk');
  cutin(side,ch,mv.n,kind,()=>{
-  op.hp=Math.max(0,op.hp-dmg);popDmg(1-side,dmg,false);
-  if(kind==='atk')me.qi=Math.min(100,me.qi+12);
+  op.hp=Math.max(0,op.hp-dmg);popDmg(1-side,dmg,false,ctr?'剋':'');
+  if(kind==='atk')me.qi=Math.min(100,me.qi+(MUT.k==='wind'?20:12));
   const fx=kind==='sp'?mv.fx:null;
-  if(fx==='heal6'){me.hp=Math.min(100,me.hp+6);popDmg(side,6,true);}
-  if(fx==='drain6'){me.hp=Math.min(100,me.hp+6);popDmg(side,6,true);}
+  const hv=MUT.k==='spring'?12:6;
+  if(fx==='heal6'){me.hp=Math.min(100,me.hp+hv);popDmg(side,hv,true);}
+  if(fx==='drain6'){me.hp=Math.min(100,me.hp+hv);popDmg(side,hv,true);}
   if(fx==='self4'){me.hp=Math.max(0,me.hp-4);popDmg(side,4,false);}
   if(fx==='steal15'){const s=Math.min(15,op.qi);op.qi-=s;me.qi=Math.min(100,me.qi+s);}
   if(fx==='break20'){op.qi=Math.max(0,op.qi-20);}
@@ -559,7 +627,7 @@ function qHTML(side){const q=G.q;
  return `<div class="qarea"><div class="qtext">${q.text}<span style="color:var(--dim);font-size:12px">（${JUE_NM[q.h]}）</span></div>
   <div class="qopts">${q.c.map((c,i)=>
    `<button class="qopt${G.locked[side]?' dead':''}" data-i="${i}" onclick="answer(${side},${i})">${c.t}</button>`).join('')}</div>
-  <div class="msg" id="msg${side}">${G.locked[side]?'':'搶答！答對者得攻擊權'}</div></div>`;}
+  <div class="msg" id="msg${side}">${G.locked[side]?'':`搶答！答對者得攻擊權 <span style="color:var(--dim)">｜⚡${MUT.n}</span>`}</div></div>`;}
 function actHTML(side){const f=G.p[side],ch=ROSTER[f.key];
  return `<div class="acts on">
   <button class="act" onclick="act(${side},'atk')">👊 ${ch.atk.n}<small>傷害 ${ch.atk.d}＋集氣 12</small></button>
@@ -572,7 +640,7 @@ function figIMG(cls,key){return `<img class="fig ${cls}" src="img/stand/${key}.j
 function figsHTML(side){return `<div class="figs">${figIMG('me',G.p[side].key)}${figIMG('foe',G.p[1-side].key)}</div>`;}
 function renderAll(){if(!G)return;
  [0,1].forEach(s=>{const h=$('half'+s);let body='';
-  if(G.mode==='1p'&&s===1){ // 電腦陣營（右半）
+  if(solo(G.mode)&&s===1){ // 電腦陣營（右半）
    body=figsHTML(1)+hudHTML(1)+`<div class="wait">${
     G.phase==='q'?'🤖 對手思索中……':
     G.phase==='act'?(G.actor===1?'🤖 對手獲得攻擊權！':'被搶答——接招！'):''}</div>`;
@@ -591,14 +659,34 @@ function checkEnd(){if(!G)return false;const dead=G.p.findIndex(f=>f.hp<=0);
  if(dead<0)return false;
  const w=1-dead,wf=G.p[w],ch=ROSTER[wf.key];
  clearTimeout(G.aiTimer);Snd.play('win');
- const lose1p=G.mode==='1p'&&dead===0; // 人機模式玩家落敗
+ const lose1p=solo(G.mode)&&dead===0; // 人機類模式玩家落敗
  $('resBg').style.backgroundImage=`url('img/cutin/${wf.key}_ult.jpg')`;
  $('result').classList.toggle('lose',lose1p);
  $('winTxt').textContent=lose1p?`敗於 ${ch.nm}`:`${ch.nm} 勝`;
  // ── 八角迴圈：絕處逢生／連勝／解鎖／段位 ──
- const badges=[];let rTxt='再戰一場';
+ const badges=[];let rTxt='再戰一場';let midRun=false;
  if(wf.hp<=15)badges.push('⚡ 絕處逢生');
- if(G.mode==='1p'){
+ if(G.mode==='gt'){
+  if(dead===1){ // 攻克本關
+   const pw=Store.get('duel_pwins',0)+1;Store.set('duel_pwins',pw);
+   const vk=G.p[1].key,u=Store.get('duel_unlock',{});
+   if(!u[vk]){u[vk]=1;Store.set('duel_unlock',u);badges.push(`🔓 解鎖新角色：${ROSTER[vk].nm}`);}
+   Run.stage++;Run.hp=wf.hp;Run.qi=wf.qi;
+   const best=Store.get('duel_gt_best',0);
+   if(Run.stage>best){Store.set('duel_gt_best',Run.stage);badges.push(`📜 最佳紀錄：${Run.stage} 關`);}
+   if(Run.stage>=Run.order.length){
+    $('winTxt').textContent=`${ch.nm} 五關全破`;
+    badges.push('🏆 擂臺通關！');Run=null;rTxt='再闖一輪';
+   }else{
+    midRun=true;
+    $('winTxt').textContent=`第 ${Run.stage} 關 攻克`;
+    badges.push(`⛰️ 下一關（${Run.stage+1}/${Run.order.length}）：${ROSTER[Run.order[Run.stage]].nm}——選一枚恩賜再上`);
+   }
+  }else{
+   badges.push(`⛰️ 止步第 ${Run?Run.stage+1:1} 關`);
+   Run=null;rTxt='再闖一輪';
+  }}
+ else if(G.mode==='1p'){
   if(dead===1){ // 玩家獲勝
    const ws=Store.get('duel_wstreak',0)+1;Store.set('duel_wstreak',ws);
    const pw=Store.get('duel_pwins',0)+1;Store.set('duel_pwins',pw);
@@ -616,6 +704,12 @@ function checkEnd(){if(!G)return false;const dead=G.p.findIndex(f=>f.hp<=0);
   }}
  $('resBadges').innerHTML=badges.map(b=>`<span class="badge">${b}</span>`).join('');
  $('rematchBtn').textContent=rTxt;
+ $('boonRow').style.display=midRun?'flex':'none';
+ $('resRow').style.display=midRun?'none':'flex';
+ if(midRun)$('boonRow').innerHTML=BOONS.map((b,i)=>
+  `<button class="bigbtn gold" onclick="pickBoon(${i})">${b.ic} ${b.n}<br><small style="font-size:12px;color:var(--dim)">${b.d}</small></button>`).join('');
+ const cq=QUOTES[wf.key];
+ $('charQuote').textContent=cq?`「${cq.w}」——${ch.nm}`:'';
  $('winQuote').textContent=WIN_QUOTES[Math.floor(Math.random()*WIN_QUOTES.length)];
  const st=G.p.map((f,i)=>{const tot=f.stats.right+f.stats.wrong;
   return `${ROSTER[f.key].nm}：答對 ${f.stats.right}/${tot}，最高連對 ${f.stats.maxStreak}`;}).join('　｜　');
@@ -626,6 +720,7 @@ function checkEnd(){if(!G)return false;const dead=G.p.findIndex(f=>f.hp<=0);
  setTimeout(()=>show('result'),900);
  pickState=lastPick;return true;}
 function rematch(){const ps=pickState;if(!ps)return goHome();
+ if(ps.mode==='gt'){Run=null;return startBattle();} // 再闖一輪：重排關卡
  if(ps.mode==='1p'){ // 一鍵再戰：自動輪替下一個未解鎖反派，推進收服
   const vil=Object.keys(ROSTER).filter(x=>!ROSTER[x].hero&&x!==ps.sel[0]);
   const lockedV=vil.filter(x=>!unlocked(x));
