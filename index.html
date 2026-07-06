@@ -78,13 +78,18 @@ h1{font-size:34px;color:var(--gold);letter-spacing:8px;text-shadow:0 0 24px rgba
 #battle.lr .qtext{font-size:19px;}
 #battle.lr .qopts{grid-template-columns:1fr;} /* 半寬版面改單欄，選項不擠 */
 #battle.lr .qopt{font-size:17px;min-height:56px;}
-#battle.lr .fig{height:46%;}
+/* 左右模式＝格鬥對峙：只留己方立繪、靠中線面對面（half0=左、half1=右） */
+#battle.lr .fig{height:56%;bottom:0;
+ -webkit-mask-image:radial-gradient(ellipse 62% 58% at 50% 62%,#000 38%,transparent 74%);
+ mask-image:radial-gradient(ellipse 62% 58% at 50% 62%,#000 38%,transparent 74%);}
+#battle.lr .fig.foe{display:none;}
+#battle.lr .half.bot .fig.me{left:auto;right:-6%;}
+#battle.lr .half.top .fig.me{left:-6%;right:auto;transform:scaleX(-1);}
 #battle.lr .acts{grid-template-columns:1fr;}
 #battle.lr .cutin .mvname{font-size:30px;}
 #battle.lr .cutin.ult .mvname{font-size:36px;}
-/* 1P 模式：上半縮小成狀態列 */
-#battle.solo .half.top{flex:0 0 88px;}
-#battle.solo .half.bot{flex:1;}
+/* 1P 模式：沿用左右分屏，右半為電腦陣營 */
+#battle.solo .half.top .wait{font-size:17px;}
 /* 立繪駐場：己方左、對手右，水墨暈邊融入背景 */
 .figs{position:absolute;inset:0;z-index:0;pointer-events:none;}
 .fig{position:absolute;bottom:1%;height:72%;aspect-ratio:3/4;object-fit:cover;opacity:.95;
@@ -92,7 +97,6 @@ h1{font-size:34px;color:var(--gold);letter-spacing:8px;text-shadow:0 0 24px rgba
  mask-image:radial-gradient(ellipse 60% 58% at 50% 48%,#000 50%,transparent 84%);}
 .fig.me{left:0;}
 .fig.foe{right:0;transform:scaleX(-1);}
-#battle.solo .half.top .figs{display:none;}
 .hud,.qarea,.acts,.wait{position:relative;z-index:1;}
 .hud{display:flex;align-items:center;gap:10px;flex:0 0 auto;}
 .hud .face{width:52px;height:52px;border-radius:10px;object-fit:cover;border:1px solid var(--line);background:var(--bg2);}
@@ -388,8 +392,9 @@ function newFighter(key){return {key,hp:100,qi:0,streak:0,poison:0,weak:false,
 function startBattle(){const ps=pickState;
  G={mode:ps.mode,diff:ps.diff,layout:ps.layout||'tb',p:[newFighter(ps.sel[0]),newFighter(ps.sel[1])],
   deck:shuffle([...Array(DUEL_QS.length).keys()]),q:null,locked:[false,false],phase:'q',aiTimer:null};
+ if(ps.mode==='1p')G.layout='lr'; // 人機對戰一律左右分屏
  $('battle').classList.toggle('solo',ps.mode==='1p');
- $('battle').classList.toggle('lr',ps.mode==='2p'&&G.layout==='lr');
+ $('battle').classList.toggle('lr',G.layout==='lr');
  $('half1').classList.toggle('flip',ps.mode==='2p'&&G.layout==='tb');
  show('battle');nextQuestion();}
 function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
@@ -503,9 +508,10 @@ function figsHTML(side){return `<div class="figs">
   <img class="fig foe" src="img/chars/${G.p[1-side].key}.jpg" onerror="this.remove()"></div>`;}
 function renderAll(){if(!G)return;
  [0,1].forEach(s=>{const h=$('half'+s);let body='';
-  if(G.mode==='1p'&&s===1){ // 電腦狀態列
-   body=hudHTML(1)+(G.phase==='q'?`<div class="wait" style="flex:0">🤖 對手思索中……</div>`:
-    G.phase==='act'&&G.actor===1?`<div class="wait" style="flex:0">🤖 對手獲得攻擊權！</div>`:'');
+  if(G.mode==='1p'&&s===1){ // 電腦陣營（右半）
+   body=figsHTML(1)+hudHTML(1)+`<div class="wait">${
+    G.phase==='q'?'🤖 對手思索中……':
+    G.phase==='act'?(G.actor===1?'🤖 對手獲得攻擊權！':'被搶答——接招！'):''}</div>`;
    h.innerHTML=body;return;}
   if(G.phase==='q')body=figsHTML(s)+hudHTML(s)+(G.q?qHTML(s):'');
   else if(G.phase==='act')body=figsHTML(s)+hudHTML(s)+(G.actor===s?actHTML(s):
