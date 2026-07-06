@@ -283,6 +283,7 @@ h1{font-size:34px;color:var(--gold);letter-spacing:8px;text-shadow:0 0 24px rgba
   <div class="statline" id="statTxt"></div>
   <div class="row">
     <button class="bigbtn gold" id="rematchBtn" onclick="rematch()">再戰一場</button>
+    <button class="bigbtn" onclick="repick()">換角色</button>
     <button class="bigbtn" onclick="goHome()">回到首頁</button>
   </div>
 </div>
@@ -624,7 +625,14 @@ function checkEnd(){if(!G)return false;const dead=G.p.findIndex(f=>f.hp<=0);
  const lastPick=pickState;G=null;
  setTimeout(()=>show('result'),900);
  pickState=lastPick;return true;}
-function rematch(){if(pickState)startBattle();else goHome();}
+function rematch(){const ps=pickState;if(!ps)return goHome();
+ if(ps.mode==='1p'){ // 一鍵再戰：自動輪替下一個未解鎖反派，推進收服
+  const vil=Object.keys(ROSTER).filter(x=>!ROSTER[x].hero&&x!==ps.sel[0]);
+  const lockedV=vil.filter(x=>!unlocked(x));
+  const pool=lockedV.length?lockedV:vil;
+  ps.sel[1]=pool[Math.floor(Math.random()*pool.length)];}
+ startBattle();}
+function repick(){const ps=pickState;if(ps)startPick(ps.mode,ps.diff,ps.layout);else goHome();}
 </script>
 </body>
 </html>
