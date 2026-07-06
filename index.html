@@ -324,12 +324,13 @@ const WIN_QUOTES=[
  '思想成行動，行動成習慣，習慣成品德，品德成命運。',
 ];
 /* ═══════════ 音效（WebAudio 合成，首次觸控後啟動；有檔案則優先播檔）═══════════ */
-const Snd={ac:null,muted:false,tracks:null,cur:null,want:'menu',loopT:null,
+const Snd={ac:null,muted:false,tracks:null,cur:null,want:'op',loopT:null,
  init(){if(this.ac||this.muted)return;try{this.ac=new (window.AudioContext||window.webkitAudioContext)();}catch(e){}
-  this.tracks={menu:new Audio('audio/theme.mp3'),battle:new Audio('audio/bgm.mp3'),
-   win:new Audio('audio/win.mp3'),ult:new Audio('audio/ult.mp3')};
+  this.tracks={op:new Audio('audio/opening.mp3'),menu:new Audio('audio/theme.mp3'),
+   battle:new Audio('audio/bgm.mp3'),win:new Audio('audio/win.mp3'),ult:new Audio('audio/ult.mp3')};
   Object.values(this.tracks).forEach(a=>{a.volume=.25;});
-  this.tracks.menu.loop=this.tracks.battle.loop=true;
+  this.tracks.op.loop=this.tracks.menu.loop=this.tracks.battle.loop=true;
+  this.tracks.op.volume=.3;
   this.tracks.win.volume=.35;this.tracks.ult.volume=.5;
   this.music(this.want);},
  // 大絕高潮樂段（Dragonfall Verdict）：壓低 BGM、播 4.5 秒後收
@@ -384,7 +385,7 @@ let pickState=null;
 const $=id=>document.getElementById(id);
 function show(id){['gate','home','pick','result'].forEach(s=>$(s).classList.toggle('on',s===id));
  $('battle').classList.toggle('on',id==='battle');
- Snd.music(id==='battle'?'battle':id==='result'?'win':'menu');}
+ Snd.music(id==='battle'?'battle':id==='result'?'win':id==='gate'?'op':'menu');}
 function goHome(){clearTimeout(G&&G.aiTimer);G=null;homeBack();show('home');}
 function enterGame(){homeBack();show('home');}
 function homeBack(){$('modeRow').style.display='flex';$('diffRow').style.display='none';
