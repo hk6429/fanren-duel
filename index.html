@@ -326,10 +326,20 @@ const WIN_QUOTES=[
 /* ═══════════ 音效（WebAudio 合成，首次觸控後啟動；有檔案則優先播檔）═══════════ */
 const Snd={ac:null,muted:false,tracks:null,cur:null,want:'menu',loopT:null,
  init(){if(this.ac||this.muted)return;try{this.ac=new (window.AudioContext||window.webkitAudioContext)();}catch(e){}
-  this.tracks={menu:new Audio('audio/theme.mp3'),battle:new Audio('audio/bgm.mp3')};
-  Object.values(this.tracks).forEach(a=>{a.loop=true;a.volume=.25;});
+  this.tracks={menu:new Audio('audio/theme.mp3'),battle:new Audio('audio/bgm.mp3'),
+   win:new Audio('audio/win.mp3'),ult:new Audio('audio/ult.mp3')};
+  Object.values(this.tracks).forEach(a=>{a.volume=.25;});
+  this.tracks.menu.loop=this.tracks.battle.loop=true;
+  this.tracks.win.volume=.35;this.tracks.ult.volume=.5;
   this.music(this.want);},
- // 依畫面切曲：menu=入陣主題（Golden Temple Oath）、battle=對戰 BGM（Dragon Ink Duel）
+ // 大絕高潮樂段（Dragonfall Verdict）：壓低 BGM、播 4.5 秒後收
+ sting(){if(!this.tracks||this.muted)return;const s=this.tracks.ult;
+  try{s.currentTime=0;}catch(e){}
+  if(this.cur)this.cur.volume=.07;
+  s.play().catch(()=>{});
+  clearTimeout(this.stT);this.stT=setTimeout(()=>{s.pause();
+   if(this.cur)this.cur.volume=this.cur===this.tracks.win?.35:.25;},4500);},
+ // 依畫面切曲：menu=入陣主題（Golden Temple Oath）、battle=對戰 BGM（Dragon Ink Duel）、win=勝利凱歌（Jade Victory Horn）
  music(w){this.want=w;if(!this.tracks)return;const t=this.tracks[w];
   if(this.cur&&this.cur!==t){this.cur.pause();this.cur.currentTime=0;}
   this.stopLoop();if(this.muted)return;
@@ -374,7 +384,7 @@ let pickState=null;
 const $=id=>document.getElementById(id);
 function show(id){['gate','home','pick','result'].forEach(s=>$(s).classList.toggle('on',s===id));
  $('battle').classList.toggle('on',id==='battle');
- Snd.music(id==='battle'?'battle':'menu');}
+ Snd.music(id==='battle'?'battle':id==='result'?'win':'menu');}
 function goHome(){clearTimeout(G&&G.aiTimer);G=null;homeBack();show('home');}
 function enterGame(){homeBack();show('home');}
 function homeBack(){$('modeRow').style.display='flex';$('diffRow').style.display='none';
@@ -461,7 +471,7 @@ function act(side,kind){if(!G||G.phase!=='act'||G.actor!==side)return;
  const mv=ch[kind];let dmg=mv.d;
  if(me.streak>=3)dmg+=2;
  if(me.weak){dmg=Math.ceil(dmg/2);me.weak=false;}
- if(kind==='ult'){me.qi=0;Snd.play('ult');}else Snd.play('atk');
+ if(kind==='ult'){me.qi=0;Snd.play('ult');Snd.sting();}else Snd.play('atk');
  cutin(side,ch,mv.n,kind,()=>{
   op.hp=Math.max(0,op.hp-dmg);popDmg(1-side,dmg,false);
   const fx=kind==='sp'?mv.fx:null;
