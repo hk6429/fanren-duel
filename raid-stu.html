@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>入陣 · 眾志成城 — 七訣鬥法</title>
+<style>
+:root{--bg:#0d0f12;--bg2:#15181d;--ink:#e8e2d4;--dim:#a59f8f;--line:#2a2e35;
+ --gold:#c9a24a;--jade:#6fae8e;--red:#c25b4e;--purp:#9a7fc0;--blue:#5b8fc2;}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;touch-action:manipulation;}
+html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--ink);
+ font-family:"Noto Serif TC","Songti TC","STSong",serif;user-select:none;-webkit-user-select:none;}
+button{font-family:inherit;color:var(--ink);background:var(--bg2);border:1px solid var(--line);
+ border-radius:10px;cursor:pointer;}
+button:active{border-color:var(--gold);transform:scale(.98);}
+input{font-family:inherit;background:var(--bg2);border:1px solid var(--line);border-radius:10px;
+ color:var(--ink);padding:14px 16px;font-size:18px;text-align:center;letter-spacing:2px;outline:none;width:240px;}
+input:focus{border-color:var(--gold);}
+.screen{position:fixed;inset:0;display:none;flex-direction:column;align-items:center;
+ justify-content:center;gap:16px;padding:20px;overflow-y:auto;}
+.screen.on{display:flex;}
+h1{font-size:26px;color:var(--gold);letter-spacing:6px;}
+.sub{color:var(--dim);font-size:14px;letter-spacing:1px;text-align:center;}
+.bigbtn{font-size:19px;padding:14px 44px;min-height:56px;letter-spacing:4px;}
+.bigbtn.gold{border-color:var(--gold);color:var(--gold);}
+/* 選角 */
+#chGrid{display:grid;grid-template-columns:repeat(3,minmax(84px,110px));gap:8px;}
+.pc{position:relative;border:1px solid var(--line);border-radius:10px;overflow:hidden;aspect-ratio:3/4;
+ background:var(--bg2);padding:0;}
+.pc img{width:100%;height:100%;object-fit:cover;opacity:.75;}
+.pc .lb{position:absolute;left:0;right:0;bottom:0;font-size:13px;padding:4px 2px;text-align:center;
+ background:linear-gradient(180deg,transparent,rgba(13,15,18,.95) 55%);letter-spacing:1px;}
+.pc.sel{border-color:var(--gold);box-shadow:0 0 12px rgba(201,162,74,.45);}
+.pc.sel img{opacity:1;}
+.pc.sel .lb{color:var(--gold);}
+/* 戰鬥 */
+#fight{justify-content:flex-start;gap:0;padding:0;}
+#miniBoss{width:100%;padding:12px 16px 8px;display:flex;flex-direction:column;gap:6px;
+ background:linear-gradient(180deg,#15181d,transparent);}
+#mbLine{display:flex;justify-content:space-between;font-size:14px;color:var(--dim);}
+#mbLine b{color:var(--ink);font-weight:normal;}
+#mhpw{height:14px;border:1px solid rgba(201,162,74,.5);border-radius:7px;overflow:hidden;background:rgba(0,0,0,.5);}
+#mhp{height:100%;background:linear-gradient(90deg,#8c2f26,var(--red));transition:width .5s;}
+#qbox{flex:1;display:flex;flex-direction:column;gap:12px;padding:14px 18px 20px;width:100%;max-width:660px;
+ margin:0 auto;justify-content:center;}
+#qtext{font-size:19px;line-height:1.55;min-height:3.2em;}
+.opt{font-size:16px;line-height:1.45;padding:13px 16px;text-align:left;min-height:56px;border-radius:12px;}
+.opt.ok{border-color:var(--jade);color:var(--jade);background:rgba(111,174,142,.08);}
+.opt.bad{border-color:var(--red);color:var(--red);opacity:.85;}
+.opt:disabled{pointer-events:none;}
+#msg{min-height:3.4em;font-size:14px;line-height:1.5;color:var(--dim);}
+#msg .tag{color:var(--gold);}
+/* 我的狀態列 + 大絕 */
+#mebar{display:flex;align-items:center;gap:12px;padding:0 18px 16px;width:100%;max-width:660px;margin:0 auto;}
+#mystat{flex:1;font-size:13px;color:var(--dim);letter-spacing:1px;}
+#mystat b{color:var(--ink);font-weight:normal;}
+#qiw{flex:2;height:12px;border:1px solid var(--line);border-radius:6px;overflow:hidden;background:rgba(0,0,0,.5);}
+#qi{height:100%;width:0;background:linear-gradient(90deg,#6b5620,var(--gold));transition:width .3s;}
+#ultBtn{font-size:16px;padding:10px 18px;letter-spacing:2px;border-color:var(--line);color:var(--dim);}
+#ultBtn.ready{border-color:var(--gold);color:var(--gold);animation:glow 1s ease-in-out infinite alternate;}
+@keyframes glow{from{box-shadow:0 0 4px rgba(201,162,74,.2)}to{box-shadow:0 0 18px rgba(201,162,74,.6)}}
+/* 出招閃光 */
+#flash{position:fixed;inset:0;z-index:30;pointer-events:none;display:none;align-items:center;justify-content:center;
+ background:rgba(201,162,74,.12);}
+#flash.on{display:flex;animation:ff .55s forwards;}
+#flash div{font-size:34px;color:var(--gold);letter-spacing:6px;text-shadow:0 0 20px rgba(201,162,74,.8);}
+#flash.u{background:rgba(201,162,74,.28);}
+#flash.u div{font-size:42px;}
+@keyframes ff{0%{opacity:0}15%{opacity:1}70%{opacity:1}100%{opacity:0}}
+/* 勝利 */
+.wcard{background:rgba(21,24,29,.92);border:1px solid var(--gold);border-radius:16px;
+ padding:24px 30px;display:flex;flex-direction:column;gap:10px;align-items:center;max-width:420px;}
+.wtitle{font-size:30px;color:var(--gold);letter-spacing:6px;}
+.wl{font-size:15px;color:var(--dim);}
+.wl b{color:var(--ink);font-weight:normal;}
+#meSlayer{color:var(--red);font-size:17px;letter-spacing:2px;}
+</style>
+</head>
+<body>
+
+<!-- 入陣 -->
+<div class="screen on" id="join">
+  <h1>眾志成城 · 入陣</h1>
+  <input id="codeIn" inputmode="numeric" maxlength="4" placeholder="房號 4 位數">
+  <input id="nameIn" maxlength="8" placeholder="你的名號（最多 8 字）">
+  <div class="sub">選一位角色，你的招式將以他之名打出</div>
+  <div id="chGrid"></div>
+  <button class="bigbtn gold" onclick="doJoin()">入 陣</button>
+  <div class="sub" id="joinErr" style="color:var(--red)"></div>
+</div>
+
+<!-- 等待開戰 -->
+<div class="screen" id="wait">
+  <h1>已 入 陣</h1>
+  <div class="sub" id="waitWho"></div>
+  <div class="sub">看向大螢幕——等老師鳴鑼開戰</div>
+  <div style="font-size:44px;animation:breath 1.6s ease-in-out infinite alternate">⚔️</div>
+</div>
+<style>@keyframes breath{from{transform:scale(1);opacity:.6}to{transform:scale(1.15);opacity:1}}</style>
+
+<!-- 戰鬥 -->
+<div class="screen" id="fight">
+  <div id="miniBoss">
+    <div id="mbLine"><span id="mbNm"></span><span id="mbHp"></span></div>
+    <div id="mhpw"><div id="mhp"></div></div>
+  </div>
+  <div id="qbox">
+    <div id="qtext"></div>
+    <button class="opt" id="o0" onclick="ans(0)"></button>
+    <button class="opt" id="o1" onclick="ans(1)"></button>
+    <button class="opt" id="o2" onclick="ans(2)"></button>
+    <button class="opt" id="o3" onclick="ans(3)"></button>
+    <div id="msg"></div>
+    <button class="bigbtn" id="nextBtn" style="display:none" onclick="nextQ()">下一題 →</button>
+  </div>
+  <div id="mebar">
+    <span id="mystat"></span>
+    <div id="qiw"><div id="qi"></div></div>
+    <button id="ultBtn" onclick="fireUlt()" disabled>大絕</button>
+  </div>
+</div>
+
+<div id="flash"><div id="flashTxt"></div></div>
+
+<!-- 勝利 -->
+<div class="screen" id="won">
+  <div class="wcard">
+    <div class="wtitle">心 魔 已 斬</div>
+    <div id="meSlayer"></div>
+    <div class="wl">你的出力：<b id="wDmg"></b> 傷害</div>
+    <div class="wl">答對 <b id="wOk"></b> 題 · 答對率 <b id="wAcc"></b></div>
+    <div class="wl">放出大絕 <b id="wUlt"></b> 次</div>
+    <div class="sub">抬頭看大螢幕——全班的戰果在那裡</div>
+  </div>
+</div>
+
+<script src="questions.js"></script>
+<script>
+const CHARS={
+ xiaoyi:{nm:'蕭逸',atk:'醉仙劍·隨手一撩',ult:'眾心之劍'},
+ shenmu:{nm:'沈牧',atk:'太素回春掌',ult:'眾心之劍·醫者渡魔'},
+ murongyan:{nm:'慕容嫣',atk:'金帳天羅劍法',ult:'億念一心'},
+ bairuoxue:{nm:'白若雪',atk:'噬雪軟劍',ult:'噬雪一念'},
+ xuemo:{nm:'血魔老祖',atk:'血煞爪',ult:'血煞之核'},
+ shangyu:{nm:'商鈺',atk:'毒掌綠霧',ult:'血償同歸'},
+ xueshashi:{nm:'血煞使',atk:'噬魂幡·幡影',ult:'噬魂幡·萬魂噬'},
+ licanglan:{nm:'厲滄瀾',atk:'太虛劍訣',ult:'孤雲斷嶽'},
+ shinian:{nm:'噬念魔將',atk:'四臂撼地',ult:'怨嚎崩世'}};
+const $=id=>document.getElementById(id);
+const show=id=>{document.querySelectorAll('.screen').forEach(s=>s.classList.remove('on'));$(id).classList.add('on');};
+
+let ME={code:'',name:'',ch:'xiaoyi'};
+let S={qi:0,streak:0,dmg:0,ok:0,miss:0,ults:0};
+let deck=[],qi=0,cur=null,locked=false,fighting=false,maxhp=0;
+
+// ── 入陣畫面 ──
+$('chGrid').innerHTML=Object.entries(CHARS).map(([k,c],i)=>
+ `<button class="pc${i===0?' sel':''}" data-k="${k}" onclick="pickCh('${k}')">
+  <img src="img/chars/${k}.jpg" alt="" onerror="this.remove()"><span class="lb">${c.nm}</span></button>`).join('');
+function pickCh(k){ME.ch=k;document.querySelectorAll('.pc').forEach(p=>p.classList.toggle('sel',p.dataset.k===k));}
+const urlC=new URLSearchParams(location.search).get('c');
+if(urlC)$('codeIn').value=urlC;
+const saved=JSON.parse(localStorage.getItem('raid_me')||'null');
+if(saved&&saved.code===urlC){$('nameIn').value=saved.name;pickCh(saved.ch);}
+
+async function api(body){
+ const r=await fetch('/api/raid',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+ return r.json();}
+
+async function doJoin(){
+ ME.code=$('codeIn').value.trim();ME.name=$('nameIn').value.trim().slice(0,8);
+ if(!/^\d{4}$/.test(ME.code)){$('joinErr').textContent='房號是 4 位數字';return;}
+ if(!ME.name){$('joinErr').textContent='請輸入名號';return;}
+ const r=await api({action:'join',code:ME.code,name:ME.name,ch:ME.ch});
+ if(r.error){$('joinErr').textContent=r.error;return;}
+ localStorage.setItem('raid_me',JSON.stringify(ME));
+ $('waitWho').textContent=`${ME.name} · 以「${CHARS[ME.ch].nm}」之名出戰`;
+ buildDeck(r.room);
+ if(r.room.status==='fight'){startFight(r.room);}else{show('wait');}
+ pollLoop();
+}
+
+// ── 題庫：依房間習慣範圍 + 房間 seed + 名號 打散 ──
+function buildDeck(room){
+ const hs=new Set(room.habits);
+ const pool=window.DUEL_QS.filter(q=>hs.has(q.h));
+ let seed=(room.seed||1)+[...ME.name].reduce((a,c)=>a+c.charCodeAt(0),0);
+ const rnd=()=>{seed=(seed*9301+49297)%233280;return seed/233280;};
+ deck=pool.slice();
+ for(let i=deck.length-1;i>0;i--){const j=Math.floor(rnd()*(i+1));[deck[i],deck[j]]=[deck[j],deck[i]];}
+ qi=0;
+}
+
+function startFight(room){
+ fighting=true;maxhp=room.maxhp;
+ const b=CHARS[room.boss];
+ $('mbNm').textContent='討伐 · '+(b?b.nm:'心魔');
+ show('fight');nextQ();
+}
+
+function nextQ(){
+ if(qi>=deck.length)qi=0;
+ cur=deck[qi++];locked=false;
+ $('qtext').textContent=cur.text;
+ // 選項順序打散
+ const idx=[0,1,2,3].sort(()=>Math.random()-.5);
+ cur._map=idx;
+ idx.forEach((ci,i)=>{const b=$('o'+i);b.textContent=cur.c[ci].t;
+  b.className='opt';b.disabled=false;b.style.display='';});
+ $('msg').innerHTML='';$('nextBtn').style.display='none';
+}
+
+async function ans(i){
+ if(locked||!cur)return;locked=true;
+ const c=cur.c[cur._map[i]];
+ [0,1,2,3].forEach(k=>{const b=$('o'+k);b.disabled=true;
+  if(cur.c[cur._map[k]].q===0)b.classList.add('ok');});
+ if(c.q===0){
+  S.ok++;S.streak++;
+  const dmg=10+(S.streak>=3?5:0);
+  S.dmg+=dmg;S.qi=Math.min(100,S.qi+20);
+  flash(CHARS[ME.ch].atk+'！',false);
+  post('atk',dmg);
+  $('msg').innerHTML=`<span class="tag">${c.tag}</span>`;
+  setTimeout(nextQ,1600);
+ }else{
+  S.miss++;S.streak=0;
+  $('o'+i).classList.add('bad');
+  $('msg').innerHTML=`<span class="tag">${c.tag}</span>`;
+  post('miss',0);
+  $('nextBtn').style.display='';
+ }
+ paintMe();
+}
+
+function fireUlt(){
+ if(S.qi<100||!fighting)return;
+ S.qi=0;S.ults++;S.dmg+=50;
+ flash(CHARS[ME.ch].ult+'！！',true);
+ post('ult',50);
+ paintMe();
+}
+
+async function post(kind,dmg){
+ try{
+  const r=await api({action:'hit',code:ME.code,name:ME.name,kind,dmg,
+   ulname:kind==='ult'?CHARS[ME.ch].ult:'',
+   stats:{ch:ME.ch,dmg:S.dmg,ok:S.ok,miss:S.miss,ults:S.ults}});
+  if(typeof r.hp==='number')paintBoss(r.hp);
+  if(r.slain)showWon(ME.name);
+ }catch(e){}
+}
+
+function paintMe(){
+ $('mystat').innerHTML=`出力 <b>${S.dmg}</b>${S.streak>=3?` · 🔥連對 ${S.streak}`:''}`;
+ $('qi').style.width=S.qi+'%';
+ const ub=$('ultBtn');ub.disabled=S.qi<100;ub.classList.toggle('ready',S.qi>=100);
+ ub.textContent=S.qi>=100?'放大絕':'大絕 '+S.qi+'%';
+}
+function paintBoss(hp){
+ if(!maxhp)return;
+ $('mhp').style.width=Math.max(0,hp/maxhp*100)+'%';
+ $('mbHp').textContent=`${Math.max(0,hp)} / ${maxhp}`;
+}
+function flash(txt,ult){
+ const f=$('flash');$('flashTxt').textContent=txt;
+ f.className=ult?'u':'';f.classList.remove('on');void f.offsetWidth;f.classList.add('on');
+}
+
+// ── 輪詢房間狀態 ──
+async function pollLoop(){
+ try{
+  const r=await api({action:'mystate',code:ME.code});
+  if(!r.error){
+   if(r.status==='fight'&&!fighting){startFight({maxhp:r.maxhp,habits:r.habits,seed:r.seed,boss:r.boss});}
+   if(fighting&&typeof r.hp==='number')paintBoss(r.hp);
+   if(r.status==='won'){showWon(r.slayer);return;}
+  }
+ }catch(e){}
+ setTimeout(pollLoop,2500);
+}
+
+function showWon(slayer){
+ fighting=false;
+ show('won');
+ $('meSlayer').textContent=slayer===ME.name?'⚔️ 你是斬魔者——最後一擊出自你手！':'';
+ $('wDmg').textContent=S.dmg;
+ $('wOk').textContent=S.ok;
+ $('wAcc').textContent=(S.ok+S.miss?Math.round(S.ok/(S.ok+S.miss)*100):0)+'%';
+ $('wUlt').textContent=S.ults;
+}
+</script>
+</body>
+</html>

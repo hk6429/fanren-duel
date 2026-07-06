@@ -1,0 +1,9 @@
+{
+  "name": "fanren-duel",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@upstash/redis": "^1.38.0"
+  }
+}

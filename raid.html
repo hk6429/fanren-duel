@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>眾志成城 · 全班共鬥 — 七訣鬥法</title>
+<style>
+:root{--bg:#0d0f12;--bg2:#15181d;--ink:#e8e2d4;--dim:#a59f8f;--line:#2a2e35;
+ --gold:#c9a24a;--jade:#6fae8e;--red:#c25b4e;--purp:#9a7fc0;--blue:#5b8fc2;}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--ink);
+ font-family:"Noto Serif TC","Songti TC","STSong",serif;user-select:none;}
+button{font-family:inherit;color:var(--ink);background:var(--bg2);border:1px solid var(--line);
+ border-radius:10px;cursor:pointer;}
+button:active{border-color:var(--gold);transform:scale(.97);}
+.screen{position:fixed;inset:0;display:none;flex-direction:column;align-items:center;
+ justify-content:center;gap:20px;padding:24px;overflow:hidden;}
+.screen.on{display:flex;}
+h1{color:var(--gold);letter-spacing:8px;text-shadow:0 0 24px rgba(201,162,74,.35);}
+.sub{color:var(--dim);font-size:15px;letter-spacing:2px;}
+.bigbtn{font-size:22px;padding:16px 52px;letter-spacing:6px;}
+.bigbtn.gold{border-color:var(--gold);color:var(--gold);animation:glow 1.4s ease-in-out infinite alternate;}
+@keyframes glow{from{box-shadow:0 0 6px rgba(201,162,74,.2)}to{box-shadow:0 0 22px rgba(201,162,74,.55)}}
+.row{display:flex;gap:14px;flex-wrap:wrap;justify-content:center;}
+/* 建房 */
+.bosscards{display:flex;gap:14px;flex-wrap:wrap;justify-content:center;}
+.bcard{position:relative;width:150px;aspect-ratio:3/4;border:1px solid var(--line);border-radius:12px;
+ overflow:hidden;background:var(--bg2);padding:0;}
+.bcard img{width:100%;height:100%;object-fit:cover;opacity:.7;transition:.2s;}
+.bcard .lb{position:absolute;left:0;right:0;bottom:0;padding:8px 4px 6px;text-align:center;font-size:16px;
+ letter-spacing:2px;background:linear-gradient(180deg,transparent,rgba(13,15,18,.95) 50%);}
+.bcard.sel{border-color:var(--gold);box-shadow:0 0 16px rgba(201,162,74,.4);}
+.bcard.sel img{opacity:1;}
+.bcard.sel .lb{color:var(--gold);}
+.chip{padding:10px 20px;border-radius:20px;font-size:16px;letter-spacing:1px;}
+.chip.sel{border-color:var(--gold);color:var(--gold);background:rgba(201,162,74,.1);}
+/* 大廳 */
+#code{font-size:96px;letter-spacing:20px;color:var(--gold);text-shadow:0 0 40px rgba(201,162,74,.5);}
+#qrbox{background:#fff;padding:14px;border-radius:12px;}
+#qrbox svg,#qrbox img{display:block;width:220px;height:220px;}
+#joined{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;max-width:900px;max-height:20vh;overflow-y:auto;}
+.jtag{padding:6px 16px;border:1px solid var(--jade);color:var(--jade);border-radius:16px;font-size:16px;
+ animation:pop .3s;}
+@keyframes pop{from{transform:scale(.4);opacity:0}to{transform:scale(1);opacity:1}}
+/* 戰鬥 */
+#fight{padding:0;justify-content:flex-start;gap:0;}
+#bossbg{position:absolute;inset:0;background-size:cover;background-position:center 20%;opacity:.85;
+ transition:filter .8s;}
+#fight.rage #bossbg{filter:saturate(1.4) contrast(1.15) hue-rotate(-12deg);}
+#fight.rage::before{content:'';position:absolute;inset:0;z-index:1;pointer-events:none;
+ box-shadow:inset 0 0 140px rgba(194,91,78,.65);animation:ragep 1.2s ease-in-out infinite alternate;}
+@keyframes ragep{from{opacity:.5}to{opacity:1}}
+#fight::after{content:'';position:absolute;inset:0;
+ background:linear-gradient(180deg,rgba(13,15,18,.72) 0%,transparent 26%,transparent 62%,rgba(13,15,18,.9) 100%);}
+.fui{position:relative;z-index:3;width:100%;}
+#topbar{display:flex;flex-direction:column;gap:10px;padding:20px 4vw 0;}
+#bossname{font-size:30px;letter-spacing:6px;color:var(--ink);text-shadow:0 2px 12px #000;
+ display:flex;align-items:baseline;gap:16px;justify-content:space-between;}
+#bossname .st{font-size:16px;color:var(--dim);}
+#hpwrap{height:34px;border:1px solid rgba(201,162,74,.6);border-radius:17px;overflow:hidden;
+ background:rgba(13,15,18,.72);position:relative;}
+#hpbar{height:100%;width:100%;border-radius:17px;transition:width .5s;
+ background:linear-gradient(90deg,#8c2f26,var(--red) 55%,#e08a6e);}
+#hptxt{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+ font-size:17px;letter-spacing:2px;text-shadow:0 1px 4px #000;}
+#statline{display:flex;justify-content:space-between;color:var(--dim);font-size:16px;letter-spacing:1px;
+ text-shadow:0 1px 4px #000;}
+#combo{color:var(--gold);}
+#combo.hot{animation:cpulse .5s ease-in-out infinite alternate;}
+@keyframes cpulse{from{transform:scale(1)}to{transform:scale(1.12)}}
+/* 傷害數字 */
+#dmglayer{position:absolute;inset:0;z-index:4;pointer-events:none;overflow:hidden;}
+.dnum{position:absolute;font-size:44px;color:#ffd98a;text-shadow:0 0 14px rgba(201,162,74,.9),0 2px 4px #000;
+ animation:dfly 1.6s ease-out forwards;white-space:nowrap;}
+.dnum small{font-size:19px;color:var(--ink);display:block;text-align:center;letter-spacing:2px;}
+.dnum.ult{font-size:72px;color:#ffb45e;}
+@keyframes dfly{0%{transform:translateY(20px) scale(.6);opacity:0}12%{transform:translateY(0) scale(1.15);opacity:1}
+ 30%{transform:translateY(-14px) scale(1)}100%{transform:translateY(-110px) scale(.92);opacity:0}}
+/* 擊打 feed */
+#feed{position:absolute;left:2vw;bottom:3vh;z-index:5;display:flex;flex-direction:column-reverse;gap:6px;
+ font-size:15px;color:var(--dim);text-shadow:0 1px 3px #000;max-height:30vh;overflow:hidden;}
+#feed .f{animation:pop .25s;}
+#feed .f b{color:var(--ink);font-weight:normal;}
+#feed .f.u b{color:var(--gold);}
+#elapsed{position:absolute;right:2vw;bottom:3vh;z-index:5;font-size:22px;color:var(--dim);
+ letter-spacing:2px;text-shadow:0 1px 4px #000;}
+/* 大絕特寫 */
+#cutin{position:fixed;inset:0;z-index:20;display:none;align-items:center;justify-content:center;
+ background:#000;}
+#cutin.on{display:flex;animation:cfade .25s;}
+@keyframes cfade{from{opacity:0}to{opacity:1}}
+#cutin img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.92;
+ animation:czoom 2.4s ease-out;}
+@keyframes czoom{from{transform:scale(1.14)}to{transform:scale(1)}}
+#cutin .slash{position:absolute;left:-20%;right:-20%;top:50%;height:4px;background:var(--gold);
+ box-shadow:0 0 30px var(--gold);transform:rotate(-7deg);animation:sweep .5s ease-out;}
+@keyframes sweep{from{transform:rotate(-7deg) scaleX(0)}to{transform:rotate(-7deg) scaleX(1)}}
+#cutin .mv{position:relative;z-index:2;text-align:center;text-shadow:0 0 26px #000,0 2px 8px #000;}
+#cutin .mv .nm{font-size:64px;letter-spacing:10px;color:var(--gold);}
+#cutin .mv .who{font-size:26px;letter-spacing:4px;margin-top:14px;color:var(--ink);}
+#cutin::after{content:'';position:absolute;inset:0;background:radial-gradient(circle,transparent 30%,rgba(201,162,74,.22));animation:ragep .5s ease-in-out infinite alternate;}
+/* 結算 */
+#won{gap:14px;}
+#wonbg{position:absolute;inset:0;background-size:cover;background-position:center 20%;opacity:.22;filter:grayscale(.6);}
+.wcard{position:relative;z-index:2;background:rgba(21,24,29,.9);border:1px solid var(--gold);
+ border-radius:16px;padding:26px 40px;display:flex;flex-direction:column;gap:12px;align-items:center;
+ max-width:860px;max-height:78vh;overflow-y:auto;}
+.wtitle{font-size:44px;color:var(--gold);letter-spacing:10px;}
+.wstat{display:flex;gap:34px;font-size:18px;color:var(--dim);}
+.wstat b{color:var(--ink);font-size:24px;display:block;text-align:center;}
+.top3{display:flex;gap:18px;margin-top:4px;}
+.tcard{border:1px solid var(--line);border-radius:12px;padding:12px 22px;text-align:center;min-width:120px;}
+.tcard.first{border-color:var(--gold);}
+.tcard .r{font-size:13px;color:var(--dim);}
+.tcard .n{font-size:21px;margin:4px 0;}
+.tcard .d{font-size:15px;color:var(--gold);}
+#slayer{font-size:19px;color:var(--red);letter-spacing:2px;}
+#allnames{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;max-width:760px;}
+#allnames span{font-size:14px;color:var(--dim);border:1px solid var(--line);border-radius:12px;padding:3px 12px;}
+#record{font-size:15px;color:var(--jade);}
+.shake{animation:shk .35s;}
+@keyframes shk{0%,100%{transform:translate(0,0)}20%{transform:translate(-10px,6px)}40%{transform:translate(9px,-5px)}
+ 60%{transform:translate(-7px,-6px)}80%{transform:translate(6px,5px)}}
+label.hb{display:inline-flex;align-items:center;gap:6px;font-size:16px;color:var(--dim);cursor:pointer;
+ border:1px solid var(--line);border-radius:18px;padding:8px 16px;}
+label.hb.sel{color:var(--gold);border-color:var(--gold);}
+label.hb input{display:none;}
+</style>
+</head>
+<body>
+
+<!-- 建房 -->
+<div class="screen on" id="setup">
+  <h1 style="font-size:38px">眾志成城 · 全班共鬥</h1>
+  <div class="sub">選一隻心魔投影上大螢幕，全班答題合力討伐</div>
+  <div class="bosscards" id="bossRow"></div>
+  <div class="row" id="habitRow"></div>
+  <div class="row">
+    <button class="chip" data-len="short" onclick="pickLen('short')">短戰役 · 約 5 分鐘</button>
+    <button class="chip sel" data-len="mid" onclick="pickLen('mid')">中戰役 · 約 8 分鐘</button>
+    <button class="chip" data-len="long" onclick="pickLen('long')">長戰役 · 約 13 分鐘</button>
+  </div>
+  <button class="bigbtn gold" onclick="createRoom()">開 闢 戰 場</button>
+  <div class="sub" style="font-size:12px"><a href="index.html" style="color:var(--dim)">← 回七訣鬥法</a></div>
+</div>
+
+<!-- 大廳 -->
+<div class="screen" id="lobby">
+  <div class="sub" style="font-size:18px">掃描 QR 或輸入房號加入戰場</div>
+  <div id="code"></div>
+  <div id="qrbox"></div>
+  <div class="sub" id="joinurl"></div>
+  <div id="joined"></div>
+  <div class="sub" id="joincnt">等待勇者入陣……</div>
+  <button class="bigbtn gold" id="startBtn" onclick="startFight()" disabled>開 戰</button>
+</div>
+
+<!-- 戰鬥 -->
+<div class="screen" id="fight">
+  <div id="bossbg"></div>
+  <div class="fui" id="topbar">
+    <div id="bossname"></div>
+    <div id="hpwrap"><div id="hpbar"></div><div id="hptxt"></div></div>
+    <div id="statline">
+      <span id="pcount"></span>
+      <span id="combo"></span>
+      <span id="hitcnt"></span>
+    </div>
+  </div>
+  <div id="dmglayer"></div>
+  <div id="feed"></div>
+  <div id="elapsed"></div>
+</div>
+
+<!-- 大絕特寫 -->
+<div id="cutin">
+  <img id="cutimg" src="" alt="" onerror="this.style.display='none'">
+  <div class="slash"></div>
+  <div class="mv"><div class="nm" id="cutnm"></div><div class="who" id="cutwho"></div></div>
+</div>
+
+<!-- 勝利 -->
+<div class="screen" id="won">
+  <div id="wonbg"></div>
+  <div class="wcard">
+    <div class="wtitle">心 魔 已 斬</div>
+    <div class="sub" id="wboss"></div>
+    <div class="wstat" id="wstat"></div>
+    <div id="slayer"></div>
+    <div class="top3" id="top3"></div>
+    <div id="allnames"></div>
+    <div id="record"></div>
+    <button class="bigbtn gold" onclick="location.reload()">再 開 一 場</button>
+  </div>
+</div>
+
+<audio id="auBgm" src="audio/bgm.mp3" loop preload="auto"></audio>
+<audio id="auUlt" src="audio/ult.mp3" preload="auto"></audio>
+<audio id="auWin" src="audio/win.mp3" preload="auto"></audio>
+
+<script src="qr.js"></script>
+<script>
+const BOSSES={
+ xuemo:{nm:'血魔老祖',st:'百年魔主 · 深淵最兇'},
+ shangyu:{nm:'毒龍尊者 商鈺',st:'萬毒門叛徒'},
+ xueshashi:{nm:'血煞使',st:'魔門銀面使'},
+ licanglan:{nm:'厲滄瀾',st:'太虛大師兄'},
+ shinian:{nm:'噬念魔將',st:'四臂魔將'}};
+const HABITS=['主動積極','以終為始','要事第一','雙贏思維','知彼解己','統合綜效','不斷更新'];
+const $=id=>document.getElementById(id);
+const show=id=>{document.querySelectorAll('.screen').forEach(s=>s.classList.remove('on'));$(id).classList.add('on');};
+
+let sel={boss:'xuemo',len:'mid',habits:new Set([0,1,2,3,4,5,6])};
+let CODE='',ROOM=null,seenT=0,lastHp=null,raging=false,pollTimer=null;
+
+// ── 建房 UI ──
+$('bossRow').innerHTML=Object.entries(BOSSES).map(([k,b],i)=>
+ `<button class="bcard${i===0?' sel':''}" data-k="${k}" onclick="pickBoss('${k}')">
+   <img src="img/chars/${k}.jpg" alt="" onerror="this.remove()"><span class="lb">${b.nm}</span></button>`).join('');
+$('habitRow').innerHTML=HABITS.map((h,i)=>
+ `<label class="hb sel" data-h="${i}"><input type="checkbox" checked onchange="togHabit(${i},this)">習慣${'一二三四五六七'[i]} ${h}</label>`).join('');
+function pickBoss(k){sel.boss=k;document.querySelectorAll('.bcard').forEach(b=>b.classList.toggle('sel',b.dataset.k===k));}
+function pickLen(l){sel.len=l;document.querySelectorAll('.chip').forEach(c=>c.classList.toggle('sel',c.dataset.len===l));}
+function togHabit(i,cb){cb.checked?sel.habits.add(i):sel.habits.delete(i);
+ cb.parentElement.classList.toggle('sel',cb.checked);
+ if(!sel.habits.size){sel.habits.add(i);cb.checked=true;cb.parentElement.classList.add('sel');}}
+
+async function api(body){
+ const r=await fetch('/api/raid',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+ return r.json();}
+
+// ── 建房 → 大廳 ──
+async function createRoom(){
+ const r=await api({action:'create',boss:sel.boss,len:sel.len,habits:[...sel.habits]});
+ if(!r.code){alert(r.error||'建立失敗');return;}
+ CODE=r.code;
+ $('code').textContent=CODE;
+ const url=location.origin+'/raid-stu?c='+CODE;
+ $('joinurl').textContent=url.replace(/^https?:\/\//,'');
+ const q=qrcode(0,'M');q.addData(url);q.make();
+ $('qrbox').innerHTML=q.createSvgTag({cellSize:6,margin:0});
+ show('lobby');poll();pollTimer=setInterval(poll,1500);
+}
+
+// ── 開戰 ──
+async function startFight(){
+ const r=await api({action:'start',code:CODE});
+ ROOM=r.room;beginFight();
+}
+function beginFight(){
+ show('fight');
+ $('bossbg').style.backgroundImage=`url('img/chars/${ROOM.boss}.jpg')`;
+ $('bossname').innerHTML=`<span>${BOSSES[ROOM.boss].nm}</span><span class="st">${BOSSES[ROOM.boss].st} · 血量 ${ROOM.maxhp}</span>`;
+ lastHp=ROOM.maxhp;seenT=Date.now();
+ const bgm=$('auBgm');bgm.volume=.65;bgm.playbackRate=1;bgm.play().catch(()=>{});
+ tickClock();
+}
+function tickClock(){
+ if(!ROOM||ROOM.status!=='fight')return;
+ const s=Math.floor((Date.now()-ROOM.startAt)/1000);
+ $('elapsed').textContent=`${String(Math.floor(s/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`;
+ setTimeout(tickClock,1000);
+}
+
+// ── 輪詢 ──
+async function poll(){
+ try{
+  const r=await api({action:'state',code:CODE});
+  if(r.error)return;
+  const st=r.room.status;
+  if(st==='lobby'){
+   const names=Object.keys(r.players);
+   $('joined').innerHTML=names.map(n=>`<span class="jtag">${esc(n)}</span>`).join('');
+   $('joincnt').textContent=names.length?`已入陣 ${names.length} 人`:'等待勇者入陣……';
+   $('startBtn').disabled=!names.length;
+   return;
+  }
+  if(st==='fight'){
+   if(!ROOM||ROOM.status!=='fight'){ROOM=r.room;beginFight();}
+   ROOM=r.room;renderFight(r);
+   return;
+  }
+  if(st==='won'){ROOM=r.room;finish(r);}
+ }catch(e){}
+}
+
+function renderFight(r){
+ const pct=Math.max(0,r.hp/ROOM.maxhp*100);
+ $('hpbar').style.width=pct+'%';
+ $('hptxt').textContent=`${r.hp} / ${ROOM.maxhp}`;
+ const names=Object.keys(r.players);
+ $('pcount').textContent=`⚔️ ${names.length} 位勇者`;
+ const totalHits=Object.values(r.players).reduce((a,p)=>a+(p.ok||0),0);
+ $('hitcnt').textContent=`已斬 ${totalHits} 招`;
+ $('combo').textContent=r.combo>=3?`🔥 全班連對 × ${r.combo}`:'';
+ $('combo').classList.toggle('hot',r.combo>=6);
+ if(!raging&&pct<=50){raging=true;$('fight').classList.add('rage');$('auBgm').playbackRate=1.18;}
+ // 新擊打 → 傷害數字 + feed
+ const fresh=r.feed.filter(f=>f.t>seenT).sort((a,b)=>a.t-b.t);
+ if(fresh.length)seenT=fresh[fresh.length-1].t;
+ fresh.forEach((f,i)=>setTimeout(()=>hitFx(f),i*160));
+}
+
+function hitFx(f){
+ const d=document.createElement('div');
+ d.className='dnum'+(f.kind==='ult'?' ult':'');
+ d.innerHTML=`-${f.dmg}<small>${esc(f.name)}</small>`;
+ d.style.left=(18+Math.random()*58)+'vw';
+ d.style.top=(26+Math.random()*32)+'vh';
+ $('dmglayer').appendChild(d);setTimeout(()=>d.remove(),1700);
+ const fe=document.createElement('div');
+ fe.className='f'+(f.kind==='ult'?' u':'');
+ fe.innerHTML=f.kind==='ult'?`<b>${esc(f.name)}</b> 發動大絕【${esc(f.ulname||'大絕')}】 −${f.dmg}！`
+  :`<b>${esc(f.name)}</b> 出招 −${f.dmg}`;
+ $('feed').prepend(fe);
+ while($('feed').children.length>9)$('feed').lastChild.remove();
+ if(f.kind==='ult')ultCutin(f);
+ else{$('topbar').classList.remove('shake');void $('topbar').offsetWidth;$('topbar').classList.add('shake');}
+}
+
+function ultCutin(f){
+ $('cutimg').style.display='';
+ $('cutimg').src=`img/cutin/${f.ch||'xiaoyi'}_ult.jpg`;
+ $('cutnm').textContent=f.ulname||'大絕';
+ $('cutwho').textContent=`${f.name} · 傾力一擊 −${f.dmg}`;
+ $('cutin').classList.add('on');
+ const au=$('auUlt');au.currentTime=0;au.volume=.9;au.play().catch(()=>{});
+ const bgm=$('auBgm');const v=bgm.volume;bgm.volume=.15;
+ setTimeout(()=>{$('cutin').classList.remove('on');bgm.volume=v;au.pause();},2600);
+}
+
+// ── 勝利 ──
+function finish(r){
+ if(pollTimer){clearInterval(pollTimer);pollTimer=null;}
+ $('auBgm').pause();
+ const au=$('auWin');au.volume=.8;au.play().catch(()=>{});
+ show('won');
+ $('wonbg').style.backgroundImage=`url('img/chars/${ROOM.boss}.jpg')`;
+ $('wboss').textContent=`${BOSSES[ROOM.boss].nm} 應聲而倒`;
+ const secs=Math.max(1,Math.round((ROOM.endAt-ROOM.startAt)/1000));
+ const ps=Object.entries(r.players).map(([n,p])=>({n,...(p||{})}));
+ const ok=ps.reduce((a,p)=>a+(p.ok||0),0),miss=ps.reduce((a,p)=>a+(p.miss||0),0);
+ const acc=ok+miss?Math.round(ok/(ok+miss)*100):0;
+ $('wstat').innerHTML=`<span><b>${fmtT(secs)}</b>討伐耗時</span><span><b>${acc}%</b>全班答對率</span>
+  <span><b>${ok}</b>斬出招式</span><span><b>${ps.length}</b>參戰勇者</span>`;
+ $('slayer').textContent=ROOM.slayer?`⚔️ 斬魔者 · ${ROOM.slayer}（最後一擊）`:'';
+ const top=ps.slice().sort((a,b)=>(b.dmg||0)-(a.dmg||0)).slice(0,3);
+ const rlbl=['出力第一','出力第二','出力第三'];
+ $('top3').innerHTML=top.map((p,i)=>
+  `<div class="tcard${i===0?' first':''}"><div class="r">${rlbl[i]}</div><div class="n">${esc(p.n)}</div><div class="d">${p.dmg||0} 傷害</div></div>`).join('');
+ $('allnames').innerHTML=ps.map(p=>`<span>${esc(p.n)} ${p.dmg||0}</span>`).join('');
+ // 本班紀錄（同 Boss + 同長度）
+ const rk=`raid_best_${ROOM.boss}_${ROOM.len}`;
+ const best=parseInt(localStorage.getItem(rk)||'0',10);
+ if(!best||secs<best){localStorage.setItem(rk,secs);
+  $('record').textContent=best?`🏆 打破本班紀錄！（原紀錄 ${fmtT(best)}）`:'🏆 本班首勝，紀錄建立！';}
+ else $('record').textContent=`本班最佳紀錄 ${fmtT(best)}`;
+}
+const fmtT=s=>`${Math.floor(s/60)}分${String(s%60).padStart(2,'0')}秒`;
+const esc=s=>String(s).replace(/[<>&"]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]));
+</script>
+</body>
+</html>
