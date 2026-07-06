@@ -79,7 +79,8 @@ h1{font-size:34px;color:var(--gold);letter-spacing:8px;text-shadow:0 0 24px rgba
 #battle.lr .qopts{grid-template-columns:1fr;} /* 半寬版面改單欄，選項不擠 */
 #battle.lr .qopt{font-size:17px;min-height:56px;}
 /* 左右模式＝格鬥對峙：只留己方立繪、靠中線面對面（half0=左、half1=右） */
-#battle.lr .fig{height:56%;bottom:0;
+#battle.lr .fig{height:60%;bottom:0;}
+#battle.lr .fig.nostand{height:56%;
  -webkit-mask-image:radial-gradient(ellipse 62% 58% at 50% 62%,#000 38%,transparent 74%);
  mask-image:radial-gradient(ellipse 62% 58% at 50% 62%,#000 38%,transparent 74%);}
 #battle.lr .fig.foe{display:none;}
@@ -93,7 +94,9 @@ h1{font-size:34px;color:var(--gold);letter-spacing:8px;text-shadow:0 0 24px rgba
 /* 立繪駐場：己方左、對手右，水墨暈邊融入背景 */
 .figs{position:absolute;inset:0;z-index:0;pointer-events:none;}
 .fig{position:absolute;bottom:1%;height:72%;aspect-ratio:3/4;object-fit:cover;opacity:.95;
- -webkit-mask-image:radial-gradient(ellipse 60% 58% at 50% 48%,#000 50%,transparent 84%);
+ -webkit-mask-image:radial-gradient(ellipse 66% 68% at 50% 52%,#000 52%,transparent 92%);
+ mask-image:radial-gradient(ellipse 66% 68% at 50% 52%,#000 52%,transparent 92%);}
+.fig.nostand{-webkit-mask-image:radial-gradient(ellipse 60% 58% at 50% 48%,#000 50%,transparent 84%);
  mask-image:radial-gradient(ellipse 60% 58% at 50% 48%,#000 50%,transparent 84%);}
 .fig.me{left:0;}
 .fig.foe{right:0;transform:scaleX(-1);}
@@ -174,7 +177,15 @@ h1{font-size:34px;color:var(--gold);letter-spacing:8px;text-shadow:0 0 24px rgba
 @keyframes dmgf{0%{opacity:0;transform:translateY(8px) scale(.6)}25%{opacity:1;transform:translateY(0) scale(1.15)}
  100%{opacity:0;transform:translateY(-26px) scale(1)}}
 /* 結算 */
-#result .win{font-size:40px;color:var(--gold);letter-spacing:8px;}
+#result{position:relative;}
+#result .rbg{position:absolute;inset:0;z-index:0;background-size:cover;background-position:center 28%;
+ opacity:.55;animation:gzoom 12s ease-in-out infinite alternate;}
+#result .rbg::after{content:'';position:absolute;inset:0;
+ background:linear-gradient(180deg,rgba(13,15,18,.30) 0%,rgba(13,15,18,.62) 55%,rgba(13,15,18,.94) 100%);}
+#result>*{position:relative;z-index:1;}
+#result .win{font-size:48px;color:var(--gold);letter-spacing:8px;text-shadow:0 0 28px rgba(201,162,74,.55),2px 2px 0 #000;}
+#result.lose .win{color:var(--red);text-shadow:0 0 28px rgba(194,91,78,.6),2px 2px 0 #000;}
+#result.lose .rbg{filter:grayscale(.45) brightness(.8);}
 #result .quote{max-width:520px;text-align:center;color:var(--dim);line-height:1.8;font-size:15px;}
 .statline{font-size:14px;color:var(--dim);}
 /* 靜音鈕 */
@@ -252,6 +263,7 @@ h1{font-size:34px;color:var(--gold);letter-spacing:8px;text-shadow:0 0 24px rgba
 
 <!-- 結算 -->
 <div class="screen" id="result">
+  <div class="rbg" id="resBg"></div>
   <div class="win" id="winTxt"></div>
   <div class="quote" id="winQuote"></div>
   <div class="statline" id="statTxt"></div>
@@ -503,9 +515,9 @@ function actHTML(side){const f=G.p[side],ch=ROSTER[f.key];
   <button class="act charge" onclick="act(${side},'charge')">🌀 集氣<small>氣＋34</small></button>
   <button class="act ult" onclick="act(${side},'ult')" ${f.qi>=100?'':'disabled'}>🔥 ${ch.ult.n}<small>大絕 · 傷害 ${ch.ult.d}（需集滿氣）</small></button>
  </div>`;}
-function figsHTML(side){return `<div class="figs">
-  <img class="fig me" src="img/chars/${G.p[side].key}.jpg" onerror="this.remove()">
-  <img class="fig foe" src="img/chars/${G.p[1-side].key}.jpg" onerror="this.remove()"></div>`;}
+function figIMG(cls,key){return `<img class="fig ${cls}" src="img/stand/${key}.jpg" `+
+ `onerror="this.onerror=()=>this.remove();this.src='img/chars/${key}.jpg';this.classList.add('nostand')">`;}
+function figsHTML(side){return `<div class="figs">${figIMG('me',G.p[side].key)}${figIMG('foe',G.p[1-side].key)}</div>`;}
 function renderAll(){if(!G)return;
  [0,1].forEach(s=>{const h=$('half'+s);let body='';
   if(G.mode==='1p'&&s===1){ // 電腦陣營（右半）
@@ -524,7 +536,10 @@ function checkEnd(){if(!G)return false;const dead=G.p.findIndex(f=>f.hp<=0);
  if(dead<0)return false;
  const w=1-dead,wf=G.p[w],ch=ROSTER[wf.key];
  clearTimeout(G.aiTimer);Snd.play('win');
- $('winTxt').textContent=`${ch.nm} 勝`;
+ const lose1p=G.mode==='1p'&&dead===0; // 人機模式玩家落敗
+ $('resBg').style.backgroundImage=`url('img/cutin/${wf.key}_ult.jpg')`;
+ $('result').classList.toggle('lose',lose1p);
+ $('winTxt').textContent=lose1p?`敗於 ${ch.nm}`:`${ch.nm} 勝`;
  $('winQuote').textContent=WIN_QUOTES[Math.floor(Math.random()*WIN_QUOTES.length)];
  const st=G.p.map((f,i)=>{const tot=f.stats.right+f.stats.wrong;
   return `${ROSTER[f.key].nm}：答對 ${f.stats.right}/${tot}，最高連對 ${f.stats.maxStreak}`;}).join('　｜　');
