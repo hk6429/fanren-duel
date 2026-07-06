@@ -203,6 +203,15 @@ h1{font-size:34px;color:var(--gold);letter-spacing:8px;text-shadow:0 0 24px rgba
 /* 靜音鈕 */
 #mute{position:fixed;right:10px;top:10px;z-index:50;width:42px;height:42px;border-radius:50%;
  font-size:18px;opacity:.7;}
+/* ── 開場影片 ── */
+#intro{position:fixed;inset:0;z-index:99;background:#000;display:flex;
+ align-items:center;justify-content:center;cursor:pointer;
+ transition:opacity .6s;}
+#intro.out{opacity:0;pointer-events:none;}
+#intro video{width:100%;height:100%;object-fit:contain;} /* contain：影片完整不裁切 */
+.introskip{position:absolute;right:18px;bottom:14px;color:rgba(232,226,212,.55);
+ font-size:13px;letter-spacing:2px;border:1px solid rgba(232,226,212,.25);
+ border-radius:20px;padding:6px 14px;}
 </style>
 </head>
 <body>
@@ -211,6 +220,13 @@ h1{font-size:34px;color:var(--gold);letter-spacing:8px;text-shadow:0 0 24px rgba
 <div id="app">
 
 <!-- 入口 -->
+<!-- 開場影片：播完（或輕觸跳過）回到入口 -->
+<div id="intro" onclick="endIntro()">
+  <video id="introVid" src="video/intro.mp4" autoplay muted playsinline preload="auto"
+    onended="endIntro()" onerror="endIntro()"></video>
+  <div class="introskip">輕觸跳過 ▸</div>
+</div>
+
 <div class="screen on" id="gate">
   <div class="gbg" style="background-image:url('img/cutin/xiaoyi_ult.jpg')"></div>
   <div class="gin">
@@ -408,6 +424,12 @@ const $=id=>document.getElementById(id);
 function show(id){['gate','home','pick','result'].forEach(s=>$(s).classList.toggle('on',s===id));
  $('battle').classList.toggle('on',id==='battle');
  Snd.music(id==='battle'?'battle':id==='result'?'win':id==='gate'?'op':'menu');}
+function endIntro(){const w=$('intro');if(!w)return;
+ try{$('introVid').pause();}catch(e){}
+ w.classList.add('out');setTimeout(()=>w.remove(),650);}
+(function(){const v=$('introVid');if(!v)return; // 6 秒內沒真正開播（被擋/載不動）就自動跳過
+ let ok=false;v.addEventListener('playing',()=>ok=true);
+ setTimeout(()=>{if(!ok&&v.currentTime===0)endIntro();},6000);})();
 function goHome(){clearTimeout(G&&G.aiTimer);G=null;Run=null;homeBack();show('home');}
 function enterGame(){homeBack();show('home');}
 function homeBack(){$('modeRow').style.display='flex';$('diffRow').style.display='none';
