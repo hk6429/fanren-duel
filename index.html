@@ -295,39 +295,39 @@ const ROSTER={
  xiaoyi:{nm:'蕭逸',st:'醉仙劍客',hero:1,
   atk:{n:'醉仙劍·隨手一撩',d:10},
   sp:{n:'忘形劍意',d:16,fx:'burst',hint:'爆發 16 傷'},
-  ult:{n:'眾心之劍',d:30}},
+  ult:{n:'眾心之劍',d:40}},
  shenmu:{nm:'沈牧',st:'玄冥醫者',hero:1,
   atk:{n:'太素回春掌',d:10},
   sp:{n:'焰心訣',d:12,fx:'heal6',hint:'12 傷＋回血 6'},
-  ult:{n:'眾心之劍·醫者渡魔',d:30}},
+  ult:{n:'眾心之劍·醫者渡魔',d:40}},
  murongyan:{nm:'慕容嫣',st:'金帳郡主',hero:1,
   atk:{n:'金帳天羅劍法',d:10},
   sp:{n:'破魔訣',d:12,fx:'steal15',hint:'12 傷＋奪氣 15'},
-  ult:{n:'億念一心',d:30}},
+  ult:{n:'億念一心',d:40}},
  bairuoxue:{nm:'白若雪',st:'萬毒聖女',hero:1,
   atk:{n:'噬雪軟劍',d:10},
   sp:{n:'萬毒朝宗訣',d:8,fx:'poison',hint:'8 傷＋中毒 3 回合'},
-  ult:{n:'噬雪一念',d:30}},
+  ult:{n:'噬雪一念',d:40}},
  xuemo:{nm:'血魔老祖',st:'百年魔主',hero:0,
   atk:{n:'血煞爪',d:10},
   sp:{n:'血煞噬魂大法',d:12,fx:'drain6',hint:'12 傷＋吸血 6'},
-  ult:{n:'血煞之核',d:30}},
+  ult:{n:'血煞之核',d:40}},
  shangyu:{nm:'商鈺',st:'毒龍尊者',hero:0,
   atk:{n:'毒掌綠霧',d:10},
   sp:{n:'同歸毒煞',d:16,fx:'self4',hint:'16 傷但自傷 4'},
-  ult:{n:'血償同歸',d:30}},
+  ult:{n:'血償同歸',d:40}},
  xueshashi:{nm:'血煞使',st:'魔門銀面使',hero:0,
   atk:{n:'噬魂幡·幡影',d:10},
   sp:{n:'幡縛',d:10,fx:'weak',hint:'10 傷＋敵下次攻擊減半'},
-  ult:{n:'噬魂幡·萬魂噬',d:30}},
+  ult:{n:'噬魂幡·萬魂噬',d:40}},
  licanglan:{nm:'厲滄瀾',st:'太虛大師兄',hero:0,
   atk:{n:'太虛劍訣',d:10},
   sp:{n:'鎮魔劍訣',d:12,fx:'qi12',hint:'12 傷＋自集氣 12'},
-  ult:{n:'孤雲斷嶽',d:30}},
+  ult:{n:'孤雲斷嶽',d:40}},
  shinian:{nm:'噬念魔將',st:'四臂怨魂兇獸',hero:0,
   atk:{n:'四臂撼地',d:10},
   sp:{n:'魔念攻心',d:10,fx:'break20',hint:'10 傷＋碎敵氣 20'},
-  ult:{n:'怨嚎崩世',d:30}},
+  ult:{n:'怨嚎崩世',d:40}},
 };
 const JUE_NM=['主動積極','以終為始','要事第一','雙贏思維','知彼解己','統合綜效','不斷更新'];
 const AI_CFG={easy:{acc:.55,tmin:6000,tmax:9000,smart:0},mid:{acc:.75,tmin:4000,tmax:6000,smart:.5},hard:{acc:.9,tmin:2000,tmax:4000,smart:1}};
@@ -499,7 +499,7 @@ function act(side,kind){if(!G||G.phase!=='act'||G.actor!==side)return;
  const me=G.p[side],op=G.p[1-side],ch=ROSTER[me.key];
  if(kind==='ult'&&me.qi<100)return;
  G.phase='anim';
- if(kind==='charge'){me.qi=Math.min(100,me.qi+34);Snd.play('charge');
+ if(kind==='charge'){me.qi=Math.min(100,me.qi+50);Snd.play('charge');
   cutin(side,ch,'集氣 · 氣走周天','charge',()=>endTurn());return;}
  const mv=ch[kind];let dmg=mv.d;
  if(me.streak>=3)dmg+=2;
@@ -507,6 +507,7 @@ function act(side,kind){if(!G||G.phase!=='act'||G.actor!==side)return;
  if(kind==='ult'){me.qi=0;Snd.play('ult');Snd.sting();}else Snd.play('atk');
  cutin(side,ch,mv.n,kind,()=>{
   op.hp=Math.max(0,op.hp-dmg);popDmg(1-side,dmg,false);
+  if(kind==='atk')me.qi=Math.min(100,me.qi+12);
   const fx=kind==='sp'?mv.fx:null;
   if(fx==='heal6'){me.hp=Math.min(100,me.hp+6);popDmg(side,6,true);}
   if(fx==='drain6'){me.hp=Math.min(100,me.hp+6);popDmg(side,6,true);}
@@ -560,9 +561,9 @@ function qHTML(side){const q=G.q;
   <div class="msg" id="msg${side}">${G.locked[side]?'':'搶答！答對者得攻擊權'}</div></div>`;}
 function actHTML(side){const f=G.p[side],ch=ROSTER[f.key];
  return `<div class="acts on">
-  <button class="act" onclick="act(${side},'atk')">👊 ${ch.atk.n}<small>傷害 ${ch.atk.d}</small></button>
+  <button class="act" onclick="act(${side},'atk')">👊 ${ch.atk.n}<small>傷害 ${ch.atk.d}＋集氣 12</small></button>
   <button class="act" onclick="act(${side},'sp')">✨ ${ch.sp.n}<small>${ch.sp.hint}</small></button>
-  <button class="act charge" onclick="act(${side},'charge')">🌀 集氣<small>氣＋34</small></button>
+  <button class="act charge" onclick="act(${side},'charge')">🌀 集氣<small>氣＋50（兩次集滿）</small></button>
   <button class="act ult" onclick="act(${side},'ult')" ${f.qi>=100?'':'disabled'}>🔥 ${ch.ult.n}<small>大絕 · 傷害 ${ch.ult.d}（需集滿氣）</small></button>
  </div>`;}
 function figIMG(cls,key){return `<img class="fig ${cls}" src="img/stand/${key}.jpg" `+
