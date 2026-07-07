@@ -88,15 +88,61 @@ h1{font-size:26px;color:var(--gold);letter-spacing:6px;}
   <div class="sub" id="roleHint">蕭逸 · 爆發型 — 大絕 70 傷</div>
   <button class="bigbtn gold" onclick="doJoin()">入 陣</button>
   <div class="sub" id="joinErr" style="color:var(--red)"></div>
-  <div class="sub" id="badgeCnt"></div>
+  <div class="sub" id="myTitle" style="color:var(--gold)"></div>
+  <div id="badgeCnt"></div>
+  <div class="row2">
+    <button class="chip2" onclick="togBox('histBox');renderHist()">📈 修為譜</button>
+    <button class="chip2" id="sgBtn" style="display:none" onclick="togBox('sgBox')">🖋️ 獻策出題</button>
+  </div>
+  <div id="histBox" class="foldbox"></div>
+  <div id="sgBox" class="foldbox">
+    <div class="sub">出一題好題，經老師核准後全班討伐時會用到！</div>
+    <select id="sgH">
+      <option value="0">習慣一 主動積極</option><option value="1">習慣二 以終為始</option>
+      <option value="2">習慣三 要事第一</option><option value="3">習慣四 雙贏思維</option>
+      <option value="4">習慣五 知彼解己</option><option value="5">習慣六 統合綜效</option>
+      <option value="6">習慣七 不斷更新</option>
+    </select>
+    <input id="sgQ" maxlength="60" placeholder="題目情境（一句話）" style="width:100%">
+    <div class="sgopt"><input type="radio" name="sgR" value="0" checked><input id="sgO0" maxlength="40" placeholder="選項一"></div>
+    <div class="sgopt"><input type="radio" name="sgR" value="1"><input id="sgO1" maxlength="40" placeholder="選項二"></div>
+    <div class="sgopt"><input type="radio" name="sgR" value="2"><input id="sgO2" maxlength="40" placeholder="選項三"></div>
+    <div class="sgopt"><input type="radio" name="sgR" value="3"><input id="sgO3" maxlength="40" placeholder="選項四"></div>
+    <div class="sub">圓點＝標記正解</div>
+    <button class="bigbtn" onclick="sendSg()">獻 策</button>
+    <div class="sub" id="sgMsg"></div>
+  </div>
 </div>
+<style>
+.row2{display:flex;gap:10px;}
+.chip2{padding:8px 18px;border-radius:16px;font-size:14px;color:var(--dim);}
+.foldbox{display:none;flex-direction:column;gap:8px;width:100%;max-width:420px;
+ border:1px solid var(--line);border-radius:12px;padding:14px;}
+.foldbox.on{display:flex;}
+.histrow{display:flex;justify-content:space-between;font-size:13px;color:var(--dim);gap:8px;}
+.histrow b{color:var(--ink);font-weight:normal;}
+.histrow .up{color:var(--jade);} .histrow .dn{color:var(--red);}
+#badgeCnt{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;max-width:420px;}
+.bdg{font-size:12px;color:var(--dim);border:1px solid var(--line);border-radius:12px;padding:3px 10px;}
+.bdg.t3{border-color:#b8c0cc;color:#ccd4e0;box-shadow:0 0 8px rgba(184,192,204,.35);}
+.bdg.t5{border-color:var(--gold);color:var(--gold);box-shadow:0 0 10px rgba(201,162,74,.5);}
+.bdg .ssn{font-size:10px;color:var(--purp);}
+.sgopt{display:flex;align-items:center;gap:8px;}
+.sgopt input[type=text],.sgopt input:not([type=radio]){flex:1;width:auto;padding:9px 12px;font-size:14px;text-align:left;}
+#sgQ{font-size:15px;text-align:left;}
+select{font-family:inherit;background:var(--bg2);border:1px solid var(--line);border-radius:10px;
+ color:var(--ink);padding:10px;font-size:15px;}
+.pc .stars{position:absolute;top:3px;right:5px;font-size:10px;color:var(--gold);text-shadow:0 1px 3px #000;}
+</style>
 
 <!-- 等待開戰 -->
 <div class="screen" id="wait">
   <h1>已 入 陣</h1>
   <div class="sub" id="waitWho"></div>
-  <div class="sub">看向大螢幕——等老師鳴鑼開戰</div>
+  <div class="sub" id="waitTrait" style="color:var(--purp)"></div>
+  <div class="sub">看向大螢幕——等老師鳴鑼開戰<br>想換角？回上一頁用同一個名號重新入陣即可</div>
   <div style="font-size:44px;animation:breath 1.6s ease-in-out infinite alternate">⚔️</div>
+  <button class="chip2" onclick="location.reload()">← 換角重進</button>
 </div>
 <style>@keyframes breath{from{transform:scale(1);opacity:.6}to{transform:scale(1.15);opacity:1}}</style>
 
@@ -133,9 +179,40 @@ h1{font-size:26px;color:var(--gold);letter-spacing:6px;}
     <div class="wl">你的出力：<b id="wDmg"></b> 傷害</div>
     <div class="wl">答對 <b id="wOk"></b> 題 · 答對率 <b id="wAcc"></b></div>
     <div class="wl">放出大絕 <b id="wUlt"></b> 次</div>
+    <div class="wl" id="wDelta"></div>
+    <div id="mvpArea">
+      <div class="sub">💗 感謝之投：這一戰最想感謝哪位隊友？</div>
+      <div id="mvpBtns"></div>
+    </div>
     <div class="sub">抬頭看大螢幕——全班的戰果在那裡</div>
   </div>
 </div>
+<style>
+#mvpBtns{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-top:6px;}
+#mvpBtns button{font-size:14px;padding:8px 16px;border-radius:14px;}
+#mvpBtns button.voted{border-color:var(--gold);color:var(--gold);pointer-events:none;}
+</style>
+
+<!-- 渡氣指定 -->
+<div id="giftOv">
+  <div class="gcard">
+    <div style="color:var(--jade);font-size:20px;letter-spacing:3px">💠 渡氣予誰？</div>
+    <div class="sub">選一位氣力最低的同袍全力灌注，或交給天意</div>
+    <div id="giftBtns"></div>
+    <button class="chip2" onclick="doUlt('')">🎲 交給天意（隨機兩位）</button>
+    <button class="chip2" onclick="document.getElementById('giftOv').classList.remove('on')">取消</button>
+  </div>
+</div>
+<style>
+#giftOv{position:fixed;inset:0;z-index:35;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.82);}
+#giftOv.on{display:flex;animation:ff2 .2s;}
+@keyframes ff2{from{opacity:0}to{opacity:1}}
+.gcard{background:var(--bg2);border:1px solid var(--jade);border-radius:16px;padding:22px 26px;
+ display:flex;flex-direction:column;gap:12px;align-items:center;max-width:360px;width:88vw;}
+#giftBtns{display:flex;flex-direction:column;gap:8px;width:100%;}
+#giftBtns button{font-size:16px;padding:12px;border-radius:12px;display:flex;justify-content:space-between;}
+#giftBtns button small{color:var(--dim);}
+</style>
 
 <script src="questions.js"></script>
 <script>
@@ -153,29 +230,92 @@ const CHARS={
 const ROLES={burst:{tag:'爆發',desc:'大絕 70 傷',clr:'var(--red)'},
  buff:{tag:'戰意',desc:'大絕 30 傷＋全班 +3（30秒）',clr:'var(--gold)'},
  gift:{tag:'渡氣',desc:'大絕 30 傷＋兩位同袍氣滿',clr:'var(--jade)'}};
+// 徽章 → 稱號（同款 ×3 解鎖；眾志勇士 ×5）
+const TITLES=[['⚔️ 斬魔者','屠魔劍聖',3],['🏆 出力魁首','天下無雙',3],['🔥 連對之王','心如止水',3],
+ ['⛰️ 堅毅不移','磐石道心',3],['✨ 仙法傳人','仙法宗師',3],['🎯 百步穿楊','神箭穿雲',3],
+ ['💗 同袍之心','俠骨仁心',3],['🛡️ 眾志勇士','不倒軍魂',5]];
+// 角色羈絆稱號（同角出戰 ≥3 場）
+const BOND_TITLES={xiaoyi:'醉仙劍傳人',shenmu:'回春聖手',murongyan:'金帳之鋒',bairuoxue:'雪魄劍心',
+ xuemo:'血海征服者',shangyu:'萬毒不侵',xueshashi:'幡下歸人',licanglan:'太虛劍胄',shinian:'定念者'};
+const TRAITS={
+ none:{n:'魔性沉寂',d:'心魔無特殊魔性，放手一搏！'},
+ hardult:{n:'魔軀如鐵',d:'大絕 −20%，破綻期大絕 ×3——留大絕等破綻！'},
+ fastqi:{n:'靈氣紊流',d:'集氣加速：每答對 +30 氣'},
+ chainlust:{n:'懼於連擊',d:'連對加成翻倍（+10）——穩住別答錯！'},
+ thickskin:{n:'厚甲薄膜',d:'普攻 −2、大絕 +10——集氣放大絕更划算！'},
+ swift:{n:'破綻頻現',d:'破綻保底提前到 40% 血量'}};
 const $=id=>document.getElementById(id);
 const show=id=>{document.querySelectorAll('.screen').forEach(s=>s.classList.remove('on'));$(id).classList.add('on');};
 
 let ME={code:'',name:'',ch:'xiaoyi'};
 let S={qi:0,streak:0,mstreak:0,dmg:0,ok:0,miss:0,ults:0};
 let deck=[],qi=0,cur=null,locked=false,fighting=false,maxhp=0;
-let buffUntil=0,lastGift=0,weakUntil=0;
+let buffUntil=0,lastGift=0,weakUntil=0,TRAITK='none',lastGatherFl=0,mvpVoted=false;
 const buffOn=()=>Date.now()<buffUntil;
 const weakOn=()=>Date.now()<weakUntil;
+const getCol=()=>JSON.parse(localStorage.getItem('raid_badges')||'[]');
+const getBond=()=>JSON.parse(localStorage.getItem('raid_bond')||'{}');
+const getHist=()=>JSON.parse(localStorage.getItem('raid_history')||'[]');
+const seasonNow=()=>{const m=new Date().getMonth()+1;return m===11||m===4?'期中':m===1||m===6?'期末':'';};
+function currentTitle(){
+ const cnt={};getCol().forEach(x=>cnt[x.b]=(cnt[x.b]||0)+1);
+ for(const[b,t,need]of TITLES)if((cnt[b]||0)>=need)return t;
+ const bond=getBond();
+ for(const k in bond)if(bond[k]>=3&&BOND_TITLES[k])return BOND_TITLES[k];
+ return '';
+}
 
 // ── 入陣畫面 ──
-$('chGrid').innerHTML=Object.entries(CHARS).map(([k,c],i)=>
- `<button class="pc${i===0?' sel':''}" data-k="${k}" onclick="pickCh('${k}')">
+function renderChGrid(){
+ const bond=getBond();
+ $('chGrid').innerHTML=Object.entries(CHARS).map(([k,c])=>{
+  const n=bond[k]||0,stars='★'.repeat(Math.min(5,n));
+  const bt=n>=3&&BOND_TITLES[k]?`<small style="display:block;font-size:9px;color:var(--purp)">${BOND_TITLES[k]}</small>`:'';
+  return `<button class="pc${k===ME.ch?' sel':''}" data-k="${k}" onclick="pickCh('${k}')">
   <img src="img/chars/${k}.jpg" alt="" onerror="this.remove()">
-  <span class="lb">${c.nm}<small style="display:block;font-size:10px;color:${ROLES[c.role].clr}">${ROLES[c.role].tag}型</small></span></button>`).join('');
+  ${stars?`<span class="stars">${stars}</span>`:''}
+  <span class="lb">${c.nm}${bt}<small style="display:block;font-size:10px;color:${ROLES[c.role].clr}">${ROLES[c.role].tag}型</small></span></button>`;}).join('');
+}
+renderChGrid();
 function pickCh(k){ME.ch=k;document.querySelectorAll('.pc').forEach(p=>p.classList.toggle('sel',p.dataset.k===k));
  $('roleHint').textContent=`${CHARS[k].nm} · ${ROLES[CHARS[k].role].tag}型 — ${ROLES[CHARS[k].role].desc}`;}
 const urlC=new URLSearchParams(location.search).get('c');
 if(urlC)$('codeIn').value=urlC;
 const saved=JSON.parse(localStorage.getItem('raid_me')||'null');
 if(saved&&saved.code===urlC){$('nameIn').value=saved.name;pickCh(saved.ch);}
-const _col=JSON.parse(localStorage.getItem('raid_badges')||'[]');
-if(_col.length)$('badgeCnt').textContent=`🎖 你的徽章匣：${_col.length} 枚（${[...new Set(_col.map(x=>x.b))].join('、')}）`;
+function renderCollection(){
+ const col=getCol(),cnt={};col.forEach(x=>cnt[x.b]=(cnt[x.b]||0)+1);
+ $('badgeCnt').innerHTML=Object.entries(cnt).map(([b,n])=>{
+  const tier=n>=5?' t5':n>=3?' t3':'';
+  const ssn=col.filter(x=>x.b===b&&x.season).length?`<span class="ssn"> ${[...new Set(col.filter(x=>x.b===b&&x.season).map(x=>x.season))].join('/')}限定</span>`:'';
+  return `<span class="bdg${tier}">${b} ×${n}${n>=5?' 🥇':n>=3?' 🥈':''}${ssn}</span>`;}).join('');
+ const t=currentTitle();
+ $('myTitle').textContent=t?`👑 你的稱號：「${t}」——出戰時掛在名號前`:'';
+ $('sgBtn').style.display=col.length>=5?'':'none';
+}
+renderCollection();
+function togBox(id){$(id).classList.toggle('on');}
+function renderHist(){
+ const h=getHist();
+ $('histBox').innerHTML=h.length?h.slice(0,8).map((x,i)=>{
+  const prev=h[i+1];
+  const d=prev?(x.acc>prev.acc?`<span class="up">↑+${x.acc-prev.acc}%</span>`:x.acc<prev.acc?`<span class="dn">↓${x.acc-prev.acc}%</span>`:'—'):'';
+  return `<div class="histrow"><span>${new Date(x.t).toLocaleDateString('zh-TW')}</span>
+   <span>出力 <b>${x.dmg}</b></span><span>答對率 <b>${x.acc}%</b> ${d}</span><span>${x.badge||''}</span></div>`;}).join('')
+  +'<div class="sub" style="font-size:11px">↑↓＝和你自己的上一場比</div>'
+  :'<div class="sub">還沒有戰史——打完第一場就有了</div>';
+}
+async function sendSg(){
+ const text=$('sgQ').value.trim();
+ const right=Number(document.querySelector('input[name=sgR]:checked').value);
+ const opts=[0,1,2,3].map(i=>$('sgO'+i).value.trim());
+ if(text.length<6||opts.some(o=>o.length<2)){$('sgMsg').textContent='題幹至少 6 字、每個選項至少 2 字';return;}
+ const c=opts.map((t,i)=>({t,q:i===right?0:2}));
+ const by=$('nameIn').value.trim().slice(0,8)||(saved&&saved.name)||'無名';
+ const r=await api({action:'suggest',item:{h:Number($('sgH').value),text,c,by}});
+ $('sgMsg').textContent=r.error?('❌ '+r.error):'✅ 已送出——等老師核准後就會進入全班題庫！';
+ if(!r.error){$('sgQ').value='';[0,1,2,3].forEach(i=>$('sgO'+i).value='');}
+}
 
 async function api(body){
  const r=await fetch('/api/raid',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
@@ -185,19 +325,26 @@ async function doJoin(){
  ME.code=$('codeIn').value.trim();ME.name=$('nameIn').value.trim().slice(0,8);
  if(!/^\d{4}$/.test(ME.code)){$('joinErr').textContent='房號是 4 位數字';return;}
  if(!ME.name){$('joinErr').textContent='請輸入名號';return;}
- const r=await api({action:'join',code:ME.code,name:ME.name,ch:ME.ch});
+ const ti=currentTitle();
+ const r=await api({action:'join',code:ME.code,name:ME.name,ch:ME.ch,ti});
  if(r.error){$('joinErr').textContent=r.error;return;}
  localStorage.setItem('raid_me',JSON.stringify(ME));
- $('waitWho').textContent=`${ME.name} · 以「${CHARS[ME.ch].nm}」之名出戰`;
+ TRAITK=r.room.trait||'none';
+ $('waitWho').textContent=`${ti?ti+'・':''}${ME.name} · 以「${CHARS[ME.ch].nm}」之名出戰`;
+ const tr=TRAITS[TRAITK]||TRAITS.none;
+ $('waitTrait').textContent=`🃏 本場魔性【${tr.n}】— ${tr.d}`;
  buildDeck(r.room);
  if(r.room.status==='fight'){startFight(r.room);}else{show('wait');}
  pollLoop();
 }
 
-// ── 題庫：依房間習慣範圍 + 房間 seed + 名號 打散 ──
+// ── 題庫：依房間習慣範圍 + 房間 seed + 名號 打散（併入老師核准的同學獻策題）──
 function buildDeck(room){
  const hs=new Set(room.habits);
- const pool=window.DUEL_QS.filter(q=>hs.has(q.h));
+ const extra=(room.eq||[]).filter(q=>hs.has(q.h)).map(q=>({
+  h:q.h,text:q.text+(q.by?`（${q.by} 獻策）`:''),
+  c:q.c.map(o=>({t:o.t,q:o.q,tag:o.q===0?'同袍出的好題，答對了！':'再想想——這題是同學出的'}))}));
+ const pool=window.DUEL_QS.filter(q=>hs.has(q.h)).concat(extra);
  let seed=(room.seed||1)+[...ME.name].reduce((a,c)=>a+c.charCodeAt(0),0);
  const rnd=()=>{seed=(seed*9301+49297)%233280;return seed/233280;};
  deck=pool.slice();
@@ -231,38 +378,69 @@ async function ans(i){
   if(cur.c[cur._map[k]].q===0)b.classList.add('ok');});
  if(c.q===0){
   S.ok++;S.streak++;S.mstreak=Math.max(S.mstreak,S.streak);
-  const dmg=(10+(S.streak>=3?5:0)+(buffOn()?3:0))*(weakOn()?2:1);
-  S.dmg+=dmg;S.qi=Math.min(100,S.qi+20);
+  // 行為牌修正：thickskin 普攻−2 / chainlust 連對加成翻倍 / fastqi 集氣+30
+  const base=TRAITK==='thickskin'?8:10;
+  const chain=TRAITK==='chainlust'?10:5;
+  const dmg=(base+(S.streak>=3?chain:0)+(buffOn()?3:0))*(weakOn()?2:1);
+  S.dmg+=dmg;S.qi=Math.min(100,S.qi+(TRAITK==='fastqi'?30:20));
   flash(CHARS[ME.ch].atk+'！',false);
   post('atk',dmg);
-  $('msg').innerHTML=`<span class="tag">${c.tag}</span>`;
+  $('msg').innerHTML=`<span class="tag">${c.tag||''}</span>`;
   setTimeout(nextQ,1600);
  }else{
   S.miss++;S.streak=0;
   $('o'+i).classList.add('bad');
-  $('msg').innerHTML=`<span class="tag">${c.tag}</span>`;
+  $('msg').innerHTML=`<span class="tag">${c.tag||''}</span>`;
   post('miss',0);
   $('nextBtn').style.display='';
  }
  paintMe();
 }
 
-function fireUlt(){
+function ultDmg(){
+ const role=CHARS[ME.ch].role;
+ let d=role==='burst'?70:30;
+ if(TRAITK==='thickskin')d+=10;
+ if(TRAITK==='hardult')d=Math.round(d*0.8);
+ if(weakOn())d*=TRAITK==='hardult'?3:2; // 魔軀如鐵：破綻期大絕 ×3
+ return d;
+}
+async function fireUlt(){
  if(S.qi<100||!fighting)return;
  const role=CHARS[ME.ch].role;
- const dmg=(role==='burst'?70:30)*(weakOn()?2:1);
+ if(role==='gift'){giftPick();return;}
+ doUlt('');
+}
+async function giftPick(){
+ // 渡氣指定：查一次全場，列出氣力最低三位同袍
+ $('giftBtns').innerHTML='<div class="sub">探查同袍氣力中……</div>';
+ $('giftOv').classList.add('on');
+ try{
+  const st=await api({action:'state',code:ME.code});
+  const rows=Object.entries(st.players||{}).filter(([n])=>n!==ME.name)
+   .map(([n,p])=>({n,qi:Number((p||{}).qi)||0})).sort((a,b)=>a.qi-b.qi).slice(0,3);
+  $('giftBtns').innerHTML=rows.length?rows.map(p=>
+   `<button onclick="doUlt('${p.n.replace(/'/g,'')}')">💠 ${p.n}<small>氣力 ${p.qi}%</small></button>`).join('')
+   :'<div class="sub">場上沒有其他同袍</div>';
+ }catch(e){$('giftBtns').innerHTML='<div class="sub">探查失敗，交給天意吧</div>';}
+}
+function doUlt(target){
+ if(S.qi<100||!fighting)return;
+ $('giftOv').classList.remove('on');
+ const role=CHARS[ME.ch].role;
+ const dmg=ultDmg();
  S.qi=0;S.ults++;S.dmg+=dmg;
  if(role==='buff')buffUntil=Date.now()+30000;
  flash(CHARS[ME.ch].ult+'！！',true);
- post('ult',dmg,role==='burst'?'':role);
+ post('ult',dmg,role==='burst'?'':role,target);
  paintMe();
 }
 
-async function post(kind,dmg,fx){
+async function post(kind,dmg,fx,target){
  try{
-  const r=await api({action:'hit',code:ME.code,name:ME.name,kind,dmg,fx:fx||'',
+  const r=await api({action:'hit',code:ME.code,name:ME.name,kind,dmg,fx:fx||'',target:target||'',
    ulname:kind==='ult'?CHARS[ME.ch].ult:'',
-   stats:{ch:ME.ch,dmg:S.dmg,ok:S.ok,miss:S.miss,ults:S.ults,mstreak:S.mstreak}});
+   stats:{ch:ME.ch,ti:currentTitle(),dmg:S.dmg,ok:S.ok,miss:S.miss,ults:S.ults,mstreak:S.mstreak,qi:S.qi}});
   if(typeof r.hp==='number')paintBoss(r.hp);
   if(r.slain)showWon(ME.name);
  }catch(e){}
@@ -289,12 +467,16 @@ async function pollLoop(){
  try{
   const r=await api({action:'mystate',code:ME.code,name:ME.name});
   if(!r.error){
+   if(r.trait)TRAITK=r.trait;
    if(r.status==='fight'&&!fighting){startFight({maxhp:r.maxhp,habits:r.habits,seed:r.seed,boss:r.boss});}
    if(fighting&&typeof r.hp==='number')paintBoss(r.hp);
    if(r.buffUntil>buffUntil){buffUntil=r.buffUntil;flash('全班戰意高漲 +3！',false);paintMe();}
    if(r.weakUntil>weakUntil){weakUntil=r.weakUntil;if(fighting){flash('⚡ 破綻乍現——傷害加倍！',true);paintMe();}}
    if(r.giftAt>lastGift&&fighting){lastGift=r.giftAt;
     if(S.qi<100){S.qi=100;flash('同袍渡氣——氣力全滿！',false);paintMe();}}
+   const g=r.gather;
+   if(fighting&&g&&!g.result&&Date.now()<g.until&&g.until>lastGatherFl){
+    lastGatherFl=g.until;flash('🩸 心魔聚血——全班全力打斷！',true);}
    if(r.status==='won'){showWon(r.slayer);return;}
   }
  }catch(e){}
@@ -318,6 +500,12 @@ function calcBadges(players,slayer){
  return out;
 }
 
+function awardBadge(badge,boss){
+ const col=getCol();
+ col.push({b:badge,boss:boss||'',t:Date.now(),season:seasonNow()});
+ localStorage.setItem('raid_badges',JSON.stringify(col));
+ return col.length;
+}
 async function showWon(slayer){
  if(!fighting&&$('won').classList.contains('on'))return;
  fighting=false;
@@ -325,18 +513,54 @@ async function showWon(slayer){
  $('meSlayer').textContent=slayer===ME.name?'⚔️ 你是斬魔者——最後一擊出自你手！':'';
  $('wDmg').textContent=S.dmg;
  $('wOk').textContent=S.ok;
- $('wAcc').textContent=(S.ok+S.miss?Math.round(S.ok/(S.ok+S.miss)*100):0)+'%';
+ const acc=S.ok+S.miss?Math.round(S.ok/(S.ok+S.miss)*100):0;
+ $('wAcc').textContent=acc+'%';
  $('wUlt').textContent=S.ults;
+ // 修為譜：跟自己的上一場比
+ const prevH=getHist()[0];
+ if(prevH)$('wDelta').innerHTML=`和上一場的你相比：答對率 ${acc>=prevH.acc?`<span style="color:var(--jade)">↑+${acc-prevH.acc}%</span>`:`<span style="color:var(--red)">↓${acc-prevH.acc}%</span>`} · 出力 ${S.dmg>=prevH.dmg?'↑':'↓'}${Math.abs(S.dmg-prevH.dmg)}`;
+ // 羈絆 +1
+ const bond=getBond();bond[ME.ch]=(bond[ME.ch]||0)+1;
+ localStorage.setItem('raid_bond',JSON.stringify(bond));
  // 徽章：抓全場統計算出自己的那一枚，存入本機收藏
+ let myBadge='🛡️ 眾志勇士',stPlayers={};
  try{
   const st=await api({action:'state',code:ME.code});
-  const badge=calcBadges(st.players||{},st.room?.slayer||slayer)[ME.name]||'🛡️ 眾志勇士';
-  const col=JSON.parse(localStorage.getItem('raid_badges')||'[]');
-  col.push({b:badge,boss:st.room?.boss||'',t:Date.now()});
-  localStorage.setItem('raid_badges',JSON.stringify(col));
-  $('wBadge').innerHTML=`<div style="font-size:26px;letter-spacing:3px;color:var(--gold)">${badge}</div>
-   <div class="sub">收入你的徽章匣（已收藏 ${col.length} 枚）</div>`;
+  stPlayers=st.players||{};
+  myBadge=calcBadges(stPlayers,st.room?.slayer||slayer)[ME.name]||'🛡️ 眾志勇士';
+  const n=awardBadge(myBadge,st.room?.boss||'');
+  const cnt=getCol().filter(x=>x.b===myBadge).length;
+  const tier=cnt>=5?'（第 '+cnt+' 枚 · 已鍍金 🥇）':cnt>=3?'（第 '+cnt+' 枚 · 已鍍銀 🥈）':'';
+  const ssn=seasonNow()?`<div class="sub" style="color:var(--purp)">${seasonNow()}限定框</div>`:'';
+  $('wBadge').innerHTML=`<div style="font-size:26px;letter-spacing:3px;color:var(--gold)">${myBadge}</div>
+   <div class="sub">收入你的徽章匣（已收藏 ${n} 枚）${tier}</div>${ssn}`;
  }catch(e){}
+ // 修為譜寫入本場
+ const hist=getHist();
+ hist.unshift({t:Date.now(),boss:'',dmg:S.dmg,ok:S.ok,miss:S.miss,acc,badge:myBadge});
+ localStorage.setItem('raid_history',JSON.stringify(hist.slice(0,30)));
+ // MVP 感謝之投：一人一票
+ const mates=Object.keys(stPlayers).filter(n=>n!==ME.name);
+ $('mvpBtns').innerHTML=mates.length?mates.map(n=>
+  `<button onclick="voteMvp(this,'${n.replace(/'/g,'')}')">💗 ${n}</button>`).join('')
+  :'<span class="sub">單人討伐，無隊友可投</span>';
+ // 45 秒後看自己是否得票最高 → 同袍之心徽章
+ setTimeout(async()=>{
+  try{
+   const st2=await api({action:'state',code:ME.code});
+   const rows=Object.entries(st2.mvp||{}).map(([n,v])=>({n,v:Number(v)||0})).sort((a,b)=>b.v-a.v);
+   if(rows.length&&rows[0].n===ME.name&&rows[0].v>0&&(rows.length===1||rows[0].v>rows[1].v)){
+    awardBadge('💗 同袍之心','');
+    $('wBadge').innerHTML+=`<div style="font-size:20px;color:var(--purp);letter-spacing:2px">💗 同袍之心——全班最想感謝的人是你！</div>`;
+   }
+  }catch(e){}
+ },45000);
+}
+async function voteMvp(btn,who){
+ if(mvpVoted)return;mvpVoted=true;
+ btn.classList.add('voted');
+ document.querySelectorAll('#mvpBtns button').forEach(b=>{if(b!==btn)b.disabled=true;});
+ await api({action:'mvp',code:ME.code,for:who});
 }
 </script>
 </body>

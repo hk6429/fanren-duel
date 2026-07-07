@@ -131,7 +131,7 @@ label.hb input{display:none;}
 
 <!-- 建房 -->
 <div class="screen on" id="setup">
-  <h1 style="font-size:38px">眾志成城 · 全班共鬥</h1>
+  <h1 style="font-size:36px">眾志成城 · 全班共鬥</h1>
   <div class="sub">選一隻心魔投影上大螢幕，全班答題合力討伐</div>
   <div class="bosscards" id="bossRow"></div>
   <div class="row" id="habitRow"></div>
@@ -140,9 +140,56 @@ label.hb input{display:none;}
     <button class="chip sel" data-len="mid" onclick="pickLen('mid')">中戰役 · 約 8 分鐘</button>
     <button class="chip" data-len="long" onclick="pickLen('long')">長戰役 · 約 13 分鐘</button>
   </div>
+  <div class="row">
+    <input id="clsIn" class="tin" placeholder="班名（如 805）" maxlength="12">
+    <input id="cryIn" class="tin" style="width:300px" placeholder="班級戰吼（開戰儀式全班齊喊）" maxlength="40">
+  </div>
   <button class="bigbtn gold" onclick="createRoom()">開 闢 戰 場</button>
+  <div class="row" style="gap:10px">
+    <button class="chip" onclick="openBoard('camp')">🗺️ 心魔浩劫戰役</button>
+    <button class="chip" onclick="openBoard('hall')">🏆 凌雲殿堂</button>
+    <button class="chip" onclick="openBoard('chron')">📜 討伐史冊</button>
+    <button class="chip" id="sqBtn" onclick="openBoard('sq')">🖋️ 獻策審題</button>
+  </div>
   <div class="sub" style="font-size:12px"><a href="index.html" style="color:var(--dim)">← 回七訣鬥法</a></div>
 </div>
+
+<!-- 資訊看板 overlay -->
+<div id="bov">
+  <div class="bovcard">
+    <div id="bovTitle" style="color:var(--gold);font-size:24px;letter-spacing:4px"></div>
+    <div id="bovBody"></div>
+    <button class="chip" onclick="document.getElementById('bov').classList.remove('on')">關 閉</button>
+  </div>
+</div>
+<style>
+.tin{background:var(--bg2);border:1px solid var(--line);border-radius:10px;color:var(--ink);
+ font-family:inherit;font-size:17px;padding:11px 16px;width:190px;letter-spacing:1px;}
+.tin:focus{outline:none;border-color:var(--gold);}
+#bov{position:fixed;inset:0;z-index:30;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.8);}
+#bov.on{display:flex;animation:cfade .2s;}
+.bovcard{background:var(--bg2);border:1px solid var(--gold);border-radius:16px;padding:26px 34px;
+ display:flex;flex-direction:column;gap:16px;align-items:center;max-width:840px;width:92vw;max-height:82vh;}
+#bovBody{width:100%;overflow-y:auto;display:flex;flex-direction:column;gap:8px;font-size:16px;}
+.camprow{display:flex;align-items:center;gap:14px;padding:9px 14px;border:1px solid var(--line);border-radius:10px;color:var(--dim);}
+.camprow.lit{border-color:var(--gold);color:var(--ink);background:rgba(201,162,74,.08);}
+.camprow.lit .gd{color:var(--gold);}
+.camprow .ly{font-size:13px;min-width:64px;}
+.hallrow{display:flex;justify-content:space-between;gap:10px;padding:8px 14px;border:1px solid var(--line);border-radius:10px;font-size:15px;color:var(--dim);}
+.hallrow b{color:var(--ink);font-weight:normal;}
+.hallrow .tm{color:var(--gold);}
+.sqitem{border:1px solid var(--line);border-radius:12px;padding:12px 16px;display:flex;flex-direction:column;gap:6px;}
+.sqitem .qt{color:var(--ink);font-size:17px;}
+.sqitem .op{font-size:14px;color:var(--dim);}
+.sqitem .op.right{color:var(--jade);}
+.sqitem .act{display:flex;gap:10px;margin-top:4px;}
+.bcard.lock img{filter:grayscale(.9) brightness(.5);}
+.bcard.lock .lk{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;
+ gap:6px;font-size:13px;color:var(--dim);text-align:center;padding:8px;}
+.bcard.lock .lk span:first-child{font-size:30px;}
+.bcard[data-k="xuemo2"]:not(.lock) img{filter:hue-rotate(-45deg) saturate(1.6) brightness(.85);}
+.bcard[data-k="xuemo2"]:not(.lock) .lb{color:#e08a6e;}
+</style>
 
 <!-- 大廳 -->
 <div class="screen" id="lobby">
@@ -152,6 +199,8 @@ label.hb input{display:none;}
   <div class="sub" id="joinurl"></div>
   <div id="joined"></div>
   <div class="sub" id="joincnt">等待勇者入陣……</div>
+  <div class="sub" id="rolemix" style="font-size:16px"></div>
+  <div class="sub" style="font-size:13px;text-align:center;line-height:1.9">⚔️ 戰前軍議：爆發打傷害 · 戰意增全隊 · 渡氣救隊友——想換角就同名重新加入<br>🤝 兩班合擊：另一個班掃同一個 QR，即可並肩作戰</div>
   <button class="bigbtn gold" id="startBtn" onclick="startFight()" disabled>開 戰</button>
 </div>
 
@@ -172,7 +221,19 @@ label.hb input{display:none;}
   <div id="elapsed"></div>
   <div id="buffBn">⚔️ 戰意高漲 · 全班傷害 +3</div>
   <div id="weakBn">⚡ 破 綻 乍 現 · 全班傷害 ×2 <span id="weakSec"></span></div>
+  <div id="gatherBn">🩸 心魔聚血中 <span id="gatherInfo"></span></div>
 </div>
+<style>
+#gatherBn{position:absolute;left:0;right:0;top:0;z-index:7;display:none;text-align:center;padding:10px;
+ font-size:24px;letter-spacing:4px;color:#ff9a8a;
+ background:linear-gradient(180deg,rgba(194,91,78,.4),transparent);
+ text-shadow:0 0 18px rgba(194,91,78,.9),0 2px 6px #000;animation:cpulse .4s ease-in-out infinite alternate;}
+#gatherBn.good{color:#9fe0bd;background:linear-gradient(180deg,rgba(111,174,142,.35),transparent);
+ text-shadow:0 0 18px rgba(111,174,142,.9),0 2px 6px #000;animation:none;}
+.dnum.heal{color:#9fe0bd;text-shadow:0 0 14px rgba(111,174,142,.9),0 2px 4px #000;}
+#fight.x2 #bossbg{filter:hue-rotate(-45deg) saturate(1.5) brightness(.9);}
+#fight.x2.rage #bossbg{filter:hue-rotate(-45deg) saturate(1.7) contrast(1.15) brightness(.85);}
+</style>
 <style>
 #weakBn{position:absolute;left:0;right:0;bottom:0;z-index:6;display:none;text-align:center;padding:12px;
  font-size:28px;letter-spacing:6px;color:#ffd98a;
@@ -186,10 +247,20 @@ label.hb input{display:none;}
   <img id="riteImg" src="" alt="" onerror="this.style.display='none'">
   <div class="rin">
     <div id="riteNm"></div>
+    <div id="riteTrait"></div>
     <div id="riteTaunt"></div>
+    <div id="riteCry"></div>
     <div id="riteCnt"></div>
   </div>
 </div>
+<style>
+#riteTrait{display:none;font-size:22px;letter-spacing:2px;color:var(--purp);
+ border:1px solid var(--purp);border-radius:12px;padding:10px 26px;background:rgba(154,127,192,.12);
+ text-shadow:0 1px 6px #000;animation:tflip .7s ease-out;}
+@keyframes tflip{0%{transform:rotateY(90deg) scale(.7);opacity:0}100%{transform:rotateY(0) scale(1);opacity:1}}
+#riteCry{display:none;font-size:30px;letter-spacing:4px;color:var(--gold);
+ text-shadow:0 0 24px rgba(201,162,74,.7),0 2px 8px #000;animation:pop .5s;}
+</style>
 <style>
 #rite{position:fixed;inset:0;z-index:25;display:none;align-items:center;justify-content:center;background:#000;}
 #rite.on{display:flex;animation:cfade .3s;}
@@ -219,14 +290,29 @@ label.hb input{display:none;}
   <div class="wcard">
     <div class="wtitle">心 魔 已 斬</div>
     <div class="sub" id="wboss"></div>
+    <div id="wfarewell"></div>
     <div class="wstat" id="wstat"></div>
     <div id="slayer"></div>
     <div class="top3" id="top3"></div>
     <div id="allnames"></div>
     <div id="record"></div>
+    <div id="wcamp"></div>
+    <div id="wunlock"></div>
+    <div id="mvpBox" style="display:none">
+      <div class="sub" style="text-align:center">💗 感謝之投 · 學生手機投票中</div>
+      <div id="mvpTally"></div>
+    </div>
     <button class="bigbtn gold" onclick="location.reload()">再 開 一 場</button>
   </div>
 </div>
+<style>
+#wfarewell{font-size:17px;color:var(--red);letter-spacing:2px;font-style:italic;}
+#wcamp{font-size:16px;color:var(--gold);letter-spacing:2px;animation:pop .6s;}
+#wunlock{font-size:16px;color:var(--purp);letter-spacing:2px;}
+#mvpTally{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin-top:6px;}
+#mvpTally span{border:1px solid var(--line);border-radius:14px;padding:4px 14px;font-size:15px;color:var(--dim);}
+#mvpTally span.top{border-color:var(--gold);color:var(--gold);}
+</style>
 
 <audio id="auBgm" src="audio/bgm.mp3" loop preload="auto"></audio>
 <audio id="auUlt" src="audio/ult.mp3" preload="auto"></audio>
@@ -235,25 +321,47 @@ label.hb input{display:none;}
 <script src="qr.js"></script>
 <script>
 const BOSSES={
- xuemo:{nm:'血魔老祖',st:'百年魔主 · 深淵最兇',taunt:'就憑爾等凡人，也想撼動血海？'},
- shangyu:{nm:'毒龍尊者 商鈺',st:'萬毒門叛徒',taunt:'毒霧之中，誰能全身而退？'},
- xueshashi:{nm:'血煞使',st:'魔門銀面使',taunt:'萬魂幡下，不過添幾縷新魂。'},
- licanglan:{nm:'厲滄瀾',st:'太虛大師兄',taunt:'劍未出鞘，爾等已敗。'},
- shinian:{nm:'噬念魔將',st:'四臂魔將',taunt:'心念一亂，便是吾的養分！'}};
+ xuemo:{nm:'血魔老祖',st:'百年魔主 · 深淵最兇',taunt:'就憑爾等凡人，也想撼動血海？',fw:'百年血海……竟潰於爾等同心一念……'},
+ shangyu:{nm:'毒龍尊者 商鈺',st:'萬毒門叛徒',taunt:'毒霧之中，誰能全身而退？',fw:'毒霧散盡……原來最烈的解藥，是同伴……'},
+ xueshashi:{nm:'血煞使',st:'魔門銀面使',taunt:'萬魂幡下，不過添幾縷新魂。',fw:'萬魂幡碎……爾等的名字，吾記下了……'},
+ licanglan:{nm:'厲滄瀾',st:'太虛大師兄',taunt:'劍未出鞘，爾等已敗。',fw:'劍已折……是吾小看了眾志……'},
+ shinian:{nm:'噬念魔將',st:'四臂魔將',taunt:'心念一亂，便是吾的養分！',fw:'心念如磐……吾竟無隙可乘……'},
+ xuemo2:{nm:'噬淵血尊',st:'血魔真身 · 隱藏魔尊',taunt:'窺見深淵者，必為深淵所噬！',fw:'噬淵無底……然爾等之光，深不可測……',img:'xuemo'}};
+const TRAITS={
+ none:{n:'魔性沉寂',d:'本場心魔無特殊魔性，放手一搏！'},
+ hardult:{n:'魔軀如鐵',d:'大絕傷害 −20%，但破綻期大絕 ×3——留大絕等破綻！'},
+ fastqi:{n:'靈氣紊流',d:'全班集氣速度加快（每答對 +30 氣）'},
+ chainlust:{n:'懼於連擊',d:'個人連對加成翻倍（+10）——穩住，別答錯！'},
+ thickskin:{n:'厚甲薄膜',d:'普攻 −2、大絕 +10——集氣放大絕更划算！'},
+ swift:{n:'破綻頻現',d:'破綻時刻保底提前到 40% 血量'}};
+const GODS=['傀儡古神・他咎','迷航古神・無向','急湧古神・千急','零和古神・獨贏','喧囂古神・搶答','齊一古神・同化','耗竭古神・枯磨'];
+const ROLE_OF={xiaoyi:'burst',xuemo:'burst',shangyu:'burst',shenmu:'buff',licanglan:'buff',shinian:'buff',murongyan:'gift',bairuoxue:'gift',xueshashi:'gift'};
 const HABITS=['主動積極','以終為始','要事第一','雙贏思維','知彼解己','統合綜效','不斷更新'];
+const LENL={short:'短',mid:'中',long:'長'};
 const $=id=>document.getElementById(id);
 const show=id=>{document.querySelectorAll('.screen').forEach(s=>s.classList.remove('on'));$(id).classList.add('on');};
+const bimg=k=>(BOSSES[k]&&BOSSES[k].img)||k;
 
 let sel={boss:'xuemo',len:'mid',habits:new Set([0,1,2,3,4,5,6])};
 let CODE='',ROOM=null,seenT=0,lastHp=null,raging=false,weakSeen=false,pollTimer=null;
+let CLS=localStorage.getItem('raid_cls')||'',HALL={camp:0,hidden:false,warcry:'',hall:[]};
+let TRAITK='none',gatherFlash=0,gatherEndShown=0,mvpTimer=null;
 
 // ── 建房 UI ──
-$('bossRow').innerHTML=Object.entries(BOSSES).map(([k,b],i)=>
- `<button class="bcard${i===0?' sel':''}" data-k="${k}" onclick="pickBoss('${k}')">
-   <img src="img/chars/${k}.jpg" alt="" onerror="this.remove()"><span class="lb">${b.nm}</span></button>`).join('');
+function renderBossRow(){
+ $('bossRow').innerHTML=Object.entries(BOSSES).map(([k,b],i)=>{
+  const locked=k==='xuemo2'&&!HALL.hidden;
+  return `<button class="bcard${k===sel.boss?' sel':''}${locked?' lock':''}" data-k="${k}" onclick="pickBoss('${k}')">
+   <img src="img/chars/${bimg(k)}.jpg" alt="" onerror="this.remove()">
+   ${locked?'<span class="lk"><span>🔒</span><span>勝一場且全班答對率 ≥85% 解鎖</span></span>':''}
+   <span class="lb">${b.nm}</span></button>`;}).join('');
+}
+renderBossRow();
 $('habitRow').innerHTML=HABITS.map((h,i)=>
  `<label class="hb sel" data-h="${i}"><input type="checkbox" checked onchange="togHabit(${i},this)">習慣${'一二三四五六七'[i]} ${h}</label>`).join('');
-function pickBoss(k){sel.boss=k;document.querySelectorAll('.bcard').forEach(b=>b.classList.toggle('sel',b.dataset.k===k));}
+function pickBoss(k){
+ if(k==='xuemo2'&&!HALL.hidden)return;
+ sel.boss=k;document.querySelectorAll('.bcard').forEach(b=>b.classList.toggle('sel',b.dataset.k===k));}
 function pickLen(l){sel.len=l;document.querySelectorAll('.chip').forEach(c=>c.classList.toggle('sel',c.dataset.len===l));}
 function togHabit(i,cb){cb.checked?sel.habits.add(i):sel.habits.delete(i);
  cb.parentElement.classList.toggle('sel',cb.checked);
@@ -263,11 +371,74 @@ async function api(body){
  const r=await fetch('/api/raid',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
  return r.json();}
 
+// ── 班級資料載入（戰役 / 殿堂 / 隱藏 / 戰吼 / 待審題數）──
+$('clsIn').value=CLS;
+async function loadHall(){
+ try{
+  const r=await api({action:'hall',cls:CLS});
+  if(!r.error){HALL=r;renderBossRow();if(r.warcry&&!$('cryIn').value)$('cryIn').value=r.warcry;}
+  const sq=await api({action:'sqlist'});
+  const n=(sq.items||[]).length;
+  $('sqBtn').textContent=`🖋️ 獻策審題${n?`（${n} 題待審）`:''}`;
+ }catch(e){}
+}
+loadHall();
+
+// ── 資訊看板 ──
+async function openBoard(kind){
+ const body=$('bovBody');
+ if(kind==='camp'){
+  $('bovTitle').textContent=`🗺️ 心魔浩劫戰役${CLS?` · ${CLS}`:''}`;
+  body.innerHTML=GODS.map((g,i)=>{
+   const lit=i<HALL.camp,last=i===6;
+   return `<div class="camprow${lit?' lit':''}"><span class="ly">深淵第${'一二三四五六七'[i]}層</span>
+    <span class="gd">${lit||!last?g:'？？？'}</span><span style="margin-left:auto">${lit?'✦ 已點亮':'未至'}</span></div>`;
+  }).join('')+(HALL.camp>=7?'<div class="sub" style="text-align:center;color:var(--gold)">七層全破 · 心魔浩劫已平！</div>'
+   :`<div class="sub" style="text-align:center">每勝一場，點亮一層（現 ${HALL.camp}/7）</div>`);
+ }
+ if(kind==='hall'){
+  $('bovTitle').textContent='🏆 凌雲殿堂 · 最速討伐';
+  const rows=(HALL.hall||[]).slice().sort((a,b)=>a.secs-b.secs).slice(0,8);
+  body.innerHTML=rows.length?rows.map((h,i)=>
+   `<div class="hallrow"><span>${i+1}. <b>${esc(h.cls||'無名班')}</b> 討伐 ${BOSSES[h.boss]?BOSSES[h.boss].nm:h.boss}</span>
+    <span>${LENL[h.len]||''}戰役 · ${h.n}人 · 答對率${h.acc||0}%</span><span class="tm">${fmtT(h.secs)}</span></div>`).join('')
+   :'<div class="sub" style="text-align:center">尚無戰報——打贏第一場，名留凌雲殿堂！</div>';
+ }
+ if(kind==='chron'){
+  $('bovTitle').textContent=`📜 討伐史冊${CLS?` · ${CLS}`:''}`;
+  const ch=JSON.parse(localStorage.getItem('raid_chronicle')||'[]');
+  body.innerHTML=ch.length?ch.map(c=>
+   `<div class="hallrow"><span><b>${new Date(c.date).toLocaleDateString('zh-TW')}</b> 斬 ${BOSSES[c.boss]?BOSSES[c.boss].nm:c.boss}</span>
+    <span>${LENL[c.len]||''}戰役 · ${c.n}人 · 答對率${c.acc}%</span><span class="tm">${fmtT(c.secs)}</span></div>`).join('')
+   :'<div class="sub" style="text-align:center">本機尚無戰史</div>';
+ }
+ if(kind==='sq'){
+  $('bovTitle').textContent='🖋️ 獻策審題 · 學生出的題';
+  body.innerHTML='<div class="sub" style="text-align:center">讀取中……</div>';
+  $('bov').classList.add('on');
+  const r=await api({action:'sqlist'});
+  const items=r.items||[];
+  body.innerHTML=items.length?items.map((it,i)=>
+   `<div class="sqitem"><div class="qt">【習慣${'一二三四五六七'[it.h]||'?'}】${esc(it.text)}<span class="sub" style="font-size:12px">　by ${esc(it.by||'無名')}</span></div>
+    ${it.c.map(o=>`<div class="op${o.q===0?' right':''}">${o.q===0?'✔':'・'} ${esc(o.t)}</div>`).join('')}
+    <div class="act"><button class="chip" onclick="judgeSq(${i},true)">✅ 核准入庫</button>
+    <button class="chip" onclick="judgeSq(${i},false)">🗑 退回</button></div></div>`).join('')
+   :'<div class="sub" style="text-align:center">目前沒有待審題——學生集滿 5 枚徽章即可獻策</div>';
+  return;
+ }
+ $('bov').classList.add('on');
+}
+async function judgeSq(i,ap){await api({action:'sqjudge',idx:i,approve:ap});openBoard('sq');loadHall();}
+
 // ── 建房 → 大廳 ──
 async function createRoom(){
- const r=await api({action:'create',boss:sel.boss,len:sel.len,habits:[...sel.habits]});
+ CLS=$('clsIn').value.trim().slice(0,12);
+ localStorage.setItem('raid_cls',CLS);
+ const cry=$('cryIn').value.trim().slice(0,40);
+ if(CLS&&cry&&cry!==HALL.warcry)api({action:'warcry',cls:CLS,set:cry});
+ const r=await api({action:'create',boss:sel.boss,len:sel.len,habits:[...sel.habits],cls:CLS});
  if(!r.code){alert(r.error||'建立失敗');return;}
- CODE=r.code;
+ CODE=r.code;TRAITK=r.trait||'none';
  $('code').textContent=CODE;
  const url=location.origin+'/raid-stu?c='+CODE;
  $('joinurl').textContent=url.replace(/^https?:\/\//,'');
@@ -281,15 +452,26 @@ async function startFight(){
  const b=BOSSES[sel.boss]||BOSSES[ROOM?.boss]||BOSSES.xuemo;
  const bossKey=ROOM?.boss||sel.boss;
  $('startBtn').disabled=true;
- // 儀式：Boss 特寫＋挑釁 → 3·2·1 → 開戰
+ // 儀式：Boss 特寫＋挑釁 → 行為牌翻牌 → 班級戰吼 → 3·2·1 → 開戰
  const ov=$('rite');
- $('riteImg').src=`img/cutin/${bossKey}_atk.jpg`;
+ $('riteImg').src=`img/cutin/${bimg(bossKey)}_atk.jpg`;
  $('riteTaunt').textContent=`「${b.taunt}」`;
  $('riteNm').textContent=b.nm;
  $('riteCnt').textContent='';
+ $('riteTrait').style.display='none';$('riteCry').style.display='none';
  ov.classList.add('on');
  const au=$('auUlt');au.currentTime=0;au.volume=.85;au.play().catch(()=>{});
- await new Promise(r=>setTimeout(r,2600));
+ await new Promise(r=>setTimeout(r,2000));
+ const tr=TRAITS[TRAITK]||TRAITS.none;
+ $('riteTrait').textContent=`🃏 本場魔性【${tr.n}】— ${tr.d}`;
+ $('riteTrait').style.display='block';
+ await new Promise(r=>setTimeout(r,2200));
+ const cry=$('cryIn').value.trim()||HALL.warcry;
+ if(cry){
+  $('riteCry').textContent=`全班戰吼——「${cry}」`;
+  $('riteCry').style.display='block';
+  await new Promise(r=>setTimeout(r,1800));
+ }
  for(const n of ['參','貳','壹']){
   $('riteCnt').textContent=n;
   $('riteCnt').classList.remove('tick');void $('riteCnt').offsetWidth;$('riteCnt').classList.add('tick');
@@ -303,8 +485,11 @@ async function startFight(){
 }
 function beginFight(){
  show('fight');
- $('bossbg').style.backgroundImage=`url('img/chars/${ROOM.boss}.jpg')`;
- $('bossname').innerHTML=`<span>${BOSSES[ROOM.boss].nm}</span><span class="st">${BOSSES[ROOM.boss].st} · 血量 ${ROOM.maxhp}</span>`;
+ TRAITK=ROOM.trait||TRAITK;
+ $('fight').classList.toggle('x2',ROOM.boss==='xuemo2');
+ $('bossbg').style.backgroundImage=`url('img/chars/${bimg(ROOM.boss)}.jpg')`;
+ const tr=TRAITS[TRAITK]||TRAITS.none;
+ $('bossname').innerHTML=`<span>${BOSSES[ROOM.boss].nm}</span><span class="st">${BOSSES[ROOM.boss].st} · 魔性【${tr.n}】 · 血量 ${ROOM.maxhp}</span>`;
  lastHp=ROOM.maxhp;seenT=Date.now();
  const bgm=$('auBgm');bgm.volume=.65;bgm.playbackRate=1;bgm.play().catch(()=>{});
  tickClock();
@@ -326,6 +511,9 @@ async function poll(){
    const names=Object.keys(r.players);
    $('joined').innerHTML=names.map(n=>`<span class="jtag">${esc(n)}</span>`).join('');
    $('joincnt').textContent=names.length?`已入陣 ${names.length} 人`:'等待勇者入陣……';
+   const mix={burst:0,buff:0,gift:0};
+   Object.values(r.players).forEach(p=>{mix[ROLE_OF[(p&&p.ch)||'xiaoyi']||'burst']++;});
+   $('rolemix').textContent=names.length?`陣容：🗡️ 爆發 ${mix.burst} · 🛡️ 戰意 ${mix.buff} · 💠 渡氣 ${mix.gift}`:'';
    $('startBtn').disabled=!names.length;
    return;
   }
@@ -358,6 +546,20 @@ function renderFight(r){
  $('weakBn').style.display=weakOn?'block':'none';
  $('fight').classList.toggle('weak',!!weakOn);
  if(weakOn)$('weakSec').textContent=`（剩 ${Math.max(0,Math.ceil((r.weakUntil-Date.now())/1000))} 秒）`;
+ // 聚血預告：可被全班合力打斷
+ const g=r.gather;
+ const gActive=g&&!g.result&&Date.now()<g.until;
+ if(gActive){
+  $('gatherBn').classList.remove('good');
+  $('gatherBn').innerHTML=`🩸 心魔聚血中——剩 ${Math.ceil((g.until-Date.now())/1000)} 秒 · 再 <b style="color:#ffd98a">${Math.max(0,g.need-(g.hits||0))}</b> 擊打斷！`;
+  $('gatherBn').style.display='block';gatherFlash=0;
+ }else if(g&&g.result&&gatherEndShown!==g.until){
+  gatherEndShown=g.until;gatherFlash=Date.now()+2800;
+  if(g.result==='broken'){$('gatherBn').classList.add('good');$('gatherBn').textContent='🛡️ 全班合力，聚血被打斷！';}
+  else{$('gatherBn').classList.remove('good');$('gatherBn').textContent=`🩸 聚血得逞——心魔回復 ${g.healed||0} 點血量`;}
+  $('gatherBn').style.display='block';
+ }
+ if(!gActive&&Date.now()>gatherFlash)$('gatherBn').style.display='none';
  // 新擊打 → 傷害數字 + feed
  const fresh=r.feed.filter(f=>f.t>seenT).sort((a,b)=>a.t-b.t);
  if(fresh.length)seenT=fresh[fresh.length-1].t;
@@ -365,30 +567,46 @@ function renderFight(r){
 }
 
 function hitFx(f){
+ const fe=document.createElement('div');
+ // 事件型 feed（無傷害數字或特殊數字）
+ if(f.kind==='gatherbreak'){
+  fe.className='f u';fe.innerHTML='🛡️ <b>全班合力</b>，打斷了心魔聚血！';
+  $('feed').prepend(fe);trimFeed();return;
+ }
+ if(f.kind==='gatherheal'){
+  const d=document.createElement('div');
+  d.className='dnum heal';d.innerHTML=`+${f.dmg}<small>心魔聚血</small>`;
+  d.style.left=(30+Math.random()*35)+'vw';d.style.top=(28+Math.random()*20)+'vh';
+  $('dmglayer').appendChild(d);setTimeout(()=>d.remove(),1700);
+  fe.className='f';fe.innerHTML=`🩸 心魔聚血得逞，回復 <b>${f.dmg}</b> 點血量`;
+  $('feed').prepend(fe);trimFeed();return;
+ }
  const d=document.createElement('div');
- d.className='dnum'+(f.kind==='ult'?' ult':'');
- d.innerHTML=`-${f.dmg}<small>${esc(f.name)}</small>`;
+ d.className='dnum'+(f.kind==='ult'||f.kind==='cameo'?' ult':'');
+ d.innerHTML=`-${f.dmg}<small>${esc(dispName(f))}</small>`;
  d.style.left=(18+Math.random()*58)+'vw';
  d.style.top=(26+Math.random()*32)+'vh';
  $('dmglayer').appendChild(d);setTimeout(()=>d.remove(),1700);
- const fe=document.createElement('div');
- fe.className='f'+(f.kind==='ult'?' u':'');
- const fxTxt=f.fx==='buff'?'——鼓舞全班，眾人傷害 +3！':f.fx==='gift'?'——渡氣予兩位同袍！':'';
- fe.innerHTML=f.kind==='ult'?`<b>${esc(f.name)}</b> 發動大絕【${esc(f.ulname||'大絕')}】 −${f.dmg}${fxTxt||'！'}`
-  :`<b>${esc(f.name)}</b> 出招 −${f.dmg}`;
- $('feed').prepend(fe);
- while($('feed').children.length>9)$('feed').lastChild.remove();
- if(f.kind==='ult')ultCutin(f);
+ fe.className='f'+(f.kind==='ult'||f.kind==='cameo'?' u':'');
+ const fxTxt=f.fx==='buff'?'——鼓舞全班，眾人傷害 +3！':f.fx==='gift'?'——渡氣同袍，氣力全滿！':'';
+ fe.innerHTML=f.kind==='cameo'?`⚔️ 神秘援軍 <b>路過的蕭逸</b>【${esc(f.ulname||'')}】 −${f.dmg}！`
+  :f.kind==='ult'?`<b>${esc(dispName(f))}</b> 發動大絕【${esc(f.ulname||'大絕')}】 −${f.dmg}${fxTxt||'！'}`
+  :`<b>${esc(dispName(f))}</b> 出招 −${f.dmg}`;
+ $('feed').prepend(fe);trimFeed();
+ if(f.kind==='ult'||f.kind==='cameo')ultCutin(f);
  else{$('topbar').classList.remove('shake');void $('topbar').offsetWidth;$('topbar').classList.add('shake');}
 }
+const trimFeed=()=>{while($('feed').children.length>9)$('feed').lastChild.remove();};
+const dispName=f=>(f.ti?f.ti+'・':'')+f.name;
 
 function ultCutin(f){
  $('cutimg').style.display='';
  $('cutimg').src=`img/cutin/${f.ch||'xiaoyi'}_ult.jpg`;
  $('cutnm').textContent=f.ulname||'大絕';
- $('cutwho').textContent=f.fx==='buff'?`${f.name} · 鼓舞全班 傷害+3`
-  :f.fx==='gift'?`${f.name} · 渡氣同袍 氣力全滿`
-  :`${f.name} · 傾力一擊 −${f.dmg}`;
+ $('cutwho').textContent=f.kind==='cameo'?'神秘援軍 · 路過的蕭逸 出手相助！'
+  :f.fx==='buff'?`${dispName(f)} · 鼓舞全班 傷害+3`
+  :f.fx==='gift'?`${dispName(f)} · 渡氣同袍 氣力全滿`
+  :`${dispName(f)} · 傾力一擊 −${f.dmg}`;
  $('cutin').classList.add('on');
  const au=$('auUlt');au.currentTime=0;au.volume=.9;au.play().catch(()=>{});
  const bgm=$('auBgm');const v=bgm.volume;bgm.volume=.15;
@@ -401,8 +619,9 @@ function finish(r){
  $('auBgm').pause();
  const au=$('auWin');au.volume=.8;au.play().catch(()=>{});
  show('won');
- $('wonbg').style.backgroundImage=`url('img/chars/${ROOM.boss}.jpg')`;
+ $('wonbg').style.backgroundImage=`url('img/chars/${bimg(ROOM.boss)}.jpg')`;
  $('wboss').textContent=`${BOSSES[ROOM.boss].nm} 應聲而倒`;
+ $('wfarewell').textContent=`「${BOSSES[ROOM.boss].fw||''}」`;
  const secs=Math.max(1,Math.round((ROOM.endAt-ROOM.startAt)/1000));
  const ps=Object.entries(r.players).map(([n,p])=>({n,...(p||{})}));
  const ok=ps.reduce((a,p)=>a+(p.ok||0),0),miss=ps.reduce((a,p)=>a+(p.miss||0),0);
@@ -421,6 +640,36 @@ function finish(r){
  if(!best||secs<best){localStorage.setItem(rk,secs);
   $('record').textContent=best?`🏆 打破本班紀錄！（原紀錄 ${fmtT(best)}）`:'🏆 本班首勝，紀錄建立！';}
  else $('record').textContent=`本班最佳紀錄 ${fmtT(best)}`;
+ // 討伐史冊（本機）
+ const ch=JSON.parse(localStorage.getItem('raid_chronicle')||'[]');
+ ch.unshift({boss:ROOM.boss,len:ROOM.len,secs,acc,n:ps.length,date:Date.now()});
+ localStorage.setItem('raid_chronicle',JSON.stringify(ch.slice(0,30)));
+ // 戰役地圖推進 + 隱藏解鎖播報
+ if(ROOM.cls){
+  const hadHidden=HALL.hidden;
+  api({action:'hall',cls:ROOM.cls}).then(h=>{
+   if(h.error)return;HALL=h;
+   if(h.camp>0)$('wcamp').textContent=h.camp>=7
+    ?'🗺️ 深淵七層全數點亮——心魔浩劫已平！'
+    :`🗺️ 深淵第${'一二三四五六七'[h.camp-1]}層 · ${GODS[h.camp-1]} 已點亮（${h.camp}/7）`;
+   if(!hadHidden&&h.hidden)$('wunlock').textContent='🔓 全班答對率 ≥85%——隱藏魔尊「噬淵血尊」已解鎖！';
+  });
+ }
+ // MVP 感謝之投：續 poll 票數 90 秒
+ $('mvpBox').style.display='block';
+ const mvpStart=Date.now();
+ const renderMvp=m=>{
+  const rows=Object.entries(m||{}).map(([n,v])=>({n,v:Number(v)||0})).sort((a,b)=>b.v-a.v);
+  $('mvpTally').innerHTML=rows.length
+   ?rows.map((x,i)=>`<span${i===0?' class="top"':''}>${esc(x.n)} 💗×${x.v}</span>`).join('')
+   :'<span>尚無票——請同學在手機上投出感謝</span>';
+ };
+ renderMvp(r.mvp);
+ mvpTimer=setInterval(async()=>{
+  if(Date.now()-mvpStart>90000){clearInterval(mvpTimer);return;}
+  const s=await api({action:'state',code:CODE});
+  if(!s.error)renderMvp(s.mvp);
+ },3000);
 }
 const fmtT=s=>`${Math.floor(s/60)}分${String(s%60).padStart(2,'0')}秒`;
 const esc=s=>String(s).replace(/[<>&"]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]));
