@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>學生入口 — 七訣鬥法</title>
+<style>
+:root{--bg:#0d0f12;--bg2:#15181d;--ink:#e8e2d4;--dim:#a59f8f;--line:#2a2e35;
+ --gold:#c9a24a;--jade:#6fae8e;--red:#c25b4e;}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+html,body{height:100%;background:var(--bg);color:var(--ink);
+ font-family:"Noto Serif TC","Songti TC","STSong",serif;user-select:none;}
+body{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:22px;padding:24px;}
+h1{color:var(--gold);letter-spacing:8px;font-size:30px;text-shadow:0 0 24px rgba(201,162,74,.35);}
+.sub{color:var(--dim);font-size:14px;letter-spacing:1px;text-align:center;line-height:1.8;}
+.cards{display:flex;gap:16px;flex-wrap:wrap;justify-content:center;}
+.card{position:relative;width:min(300px,86vw);aspect-ratio:16/10;border:1px solid var(--line);
+ border-radius:14px;overflow:hidden;background:var(--bg2);padding:0;cursor:pointer;
+ font-family:inherit;color:var(--ink);}
+.card img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.8;transition:.2s;}
+.card:active img{opacity:1;transform:scale(1.03);}
+.card .lb{position:absolute;left:0;right:0;bottom:0;z-index:2;padding:12px 10px 10px;text-align:center;
+ font-size:20px;letter-spacing:3px;background:linear-gradient(180deg,transparent,rgba(13,15,18,.96) 55%);}
+.card .lb small{display:block;font-size:12px;color:var(--dim);letter-spacing:1px;margin-top:4px;}
+.card.gold{border-color:var(--gold);}
+.card.gold .lb{color:var(--gold);}
+a.tch{color:var(--dim);font-size:12px;letter-spacing:1px;text-decoration:none;border-bottom:1px dotted var(--line);}
+</style>
+</head>
+<body>
+<h1>七 訣 鬥 法</h1>
+<div class="sub">學生入口 · 選擇你的戰場</div>
+<div class="cards">
+  <button class="card gold" onclick="location.href='raid-stu.html'">
+    <img src="img/cutin/xuemo_atk.jpg" alt="" onerror="this.remove()">
+    <span class="lb">🏯 入陣 · 眾志成城<small>全班共鬥 Boss——掃老師的 QR 或輸入 4 位數房號</small></span>
+  </button>
+  <button class="card" onclick="location.href='index.html'">
+    <img src="img/cutin/xiaoyi_ult.jpg" alt="" onerror="this.remove()">
+    <span class="lb">⚔️ 自由練功<small>雙人對戰 · 挑戰電腦 · 闖關擂臺（進度存在你的裝置）</small></span>
+  </button>
+</div>
+<div class="sub">團戰的徽章、稱號、修為譜都存在你自己的裝置——換裝置不會帶著走</div>
+<a class="tch" href="raid.html">教師開房入口 →</a>
+</body>
+</html>
