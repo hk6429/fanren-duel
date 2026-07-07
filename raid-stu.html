@@ -480,7 +480,7 @@ async function pollLoop(){
    if(r.status==='won'){showWon(r.slayer);return;}
   }
  }catch(e){}
- setTimeout(pollLoop,2500);
+ setTimeout(pollLoop,5000);
 }
 
 // ── 徽章：從全場統計推算，人人有一枚（優先序高→低，一人一枚不重複）──

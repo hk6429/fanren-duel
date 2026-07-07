@@ -49,7 +49,7 @@
 - **修為譜**：學生本機歷場紀錄，只跟「上一場的自己」比 ↑↓。
 - **獻策出題**：徽章 ≥5 枚解鎖出題權；老師在建房頁「獻策審題」核准後併入全班題庫，題目標註「○○ 獻策」。
 - 白帽設計不變：答錯不扣血只看講評、無倒數計時、無失敗結局、徽章永不沒收——聚血是唯一「損失」且可被全班合力打斷。
-- 同步層：Vercel Serverless（`api/raid.js`）＋ Upstash Redis（房間 key 帶 `raid:` 前綴、4 小時過期；班級長期 key `raid:camp/hall/hidden/warcry/sq/eq` 不過期），Boss 端 1.5s 輪詢。
+- 同步層：Vercel Serverless（`api/raid.js`）＋ Upstash Redis（房間 key 帶 `raid:` 前綴、4 小時過期；班級長期 key `raid:camp/hall/hidden/warcry/sq/eq` 不過期），Boss 端 2s／學生端 5s 輪詢，state/mystate 以 MGET 合併查詢（一場 30 人團戰約 1.5 萬指令，Upstash 免費額度 50 萬/月 ≈ 33 場）。
 
 ## 角色（9 名，皆出自小說《凡人煉心訣》）
 

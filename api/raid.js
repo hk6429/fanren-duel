@@ -216,12 +216,13 @@ export default async function handler(req, res) {
 
       const combo = await redis.incr(rk(code, "combo"));
       let hp = await redis.decrby(rk(code, "hp"), dmg);
-      await redis.lpush(rk(code, "feed"), JSON.stringify({
+      const flen = await redis.lpush(rk(code, "feed"), JSON.stringify({
         name, dmg, kind, fx: q.fx || "", ch: q.stats?.ch || "xiaoyi",
         ti: q.stats?.ti || "", ulname: q.ulname || "", t: Date.now(),
       }));
-      await redis.ltrim(rk(code, "feed"), 0, 29);
-      await redis.expire(rk(code, "feed"), TTL);
+      // 省指令：只在 feed 初建時設 TTL、長度破 60 才修剪（讀取端固定只取前 30）
+      if (flen === 1) await redis.expire(rk(code, "feed"), TTL);
+      else if (flen > 60) await redis.ltrim(rk(code, "feed"), 0, 29);
 
       let slain = false;
       if (hp <= 0) {
@@ -268,20 +269,15 @@ export default async function handler(req, res) {
       return j(res, 200, { votes });
     }
 
-    if (action === "state") { // Boss 投影端 poll（重）
-      const [hp, players, feedRaw, combo, buff, weak, weakDone, gatherRaw, gnext, cameoDone, mvp] = await Promise.all([
-        redis.get(rk(code, "hp")),
+    if (action === "state") { // Boss 投影端 poll（重）— mget 合併省指令
+      const [vals, players, feedRaw, mvp] = await Promise.all([
+        redis.mget(rk(code, "hp"), rk(code, "combo"), rk(code, "buff"), rk(code, "weak"),
+          rk(code, "weakDone"), rk(code, "gather"), rk(code, "gnext"), rk(code, "cameoDone")),
         redis.hgetall(rk(code, "players")),
         redis.lrange(rk(code, "feed"), 0, 29),
-        redis.get(rk(code, "combo")),
-        redis.get(rk(code, "buff")),
-        redis.get(rk(code, "weak")),
-        redis.get(rk(code, "weakDone")),
-        redis.get(rk(code, "gather")),
-        redis.get(rk(code, "gnext")),
-        redis.get(rk(code, "cameoDone")),
         redis.hgetall(rk(code, "mvp")),
       ]);
+      const [hp, combo, buff, weak, weakDone, gatherRaw, gnext, cameoDone] = vals || [];
       let hpN = Math.max(0, Number(hp) || 0);
       const now = Date.now();
 
@@ -343,15 +339,13 @@ export default async function handler(req, res) {
       });
     }
 
-    if (action === "mystate") { // 學生端 poll（輕）
+    if (action === "mystate") { // 學生端 poll（輕）— mget 合併省指令
       const name = String(q.name || "").slice(0, 8);
-      const [hp, buff, giftAt, weak, gatherRaw] = await Promise.all([
-        redis.get(rk(code, "hp")),
-        redis.get(rk(code, "buff")),
+      const [vals, giftAt] = await Promise.all([
+        redis.mget(rk(code, "hp"), rk(code, "buff"), rk(code, "weak"), rk(code, "gather")),
         name ? redis.hget(rk(code, "gifts"), name) : null,
-        redis.get(rk(code, "weak")),
-        redis.get(rk(code, "gather")),
       ]);
+      const [hp, buff, weak, gatherRaw] = vals || [];
       const gather = gatherRaw ? parseItem(gatherRaw) : null;
       return j(res, 200, {
         status: room.status, maxhp: room.maxhp, hp: Math.max(0, Number(hp) || 0),

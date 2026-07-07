@@ -444,7 +444,7 @@ async function createRoom(){
  $('joinurl').textContent=url.replace(/^https?:\/\//,'');
  const q=qrcode(0,'M');q.addData(url);q.make();
  $('qrbox').innerHTML=q.createSvgTag({cellSize:6,margin:0});
- show('lobby');poll();pollTimer=setInterval(poll,1500);
+ show('lobby');poll();pollTimer=setInterval(poll,2000);
 }
 
 // ── 開戰儀式 → 正式開戰 ──
