@@ -94,10 +94,30 @@ export default async function handler(req, res) {
         return j(res, 200, { hp: Number(hp), combo: 0 });
       }
 
+      // 支援型大絕副作用
+      if (kind === "ult" && q.fx === "buff") {
+        await redis.set(rk(code, "buff"), Date.now() + 30000, { ex: TTL });
+      }
+      if (kind === "ult" && q.fx === "gift" && name) {
+        const all = Object.keys((await redis.hgetall(rk(code, "players"))) || {})
+          .filter((n) => n !== name);
+        for (let i = all.length - 1; i > 0; i--) {
+          const k = Math.floor(Math.random() * (i + 1));
+          [all[i], all[k]] = [all[k], all[i]];
+        }
+        const picked = all.slice(0, 2);
+        if (picked.length) {
+          const upd = {};
+          picked.forEach((n) => (upd[n] = Date.now()));
+          await redis.hset(rk(code, "gifts"), upd);
+          await redis.expire(rk(code, "gifts"), TTL);
+        }
+      }
+
       const combo = await redis.incr(rk(code, "combo"));
       let hp = await redis.decrby(rk(code, "hp"), dmg);
       await redis.lpush(rk(code, "feed"), JSON.stringify({
-        name, dmg, kind, ch: q.stats?.ch || "xiaoyi", ulname: q.ulname || "", t: Date.now(),
+        name, dmg, kind, fx: q.fx || "", ch: q.stats?.ch || "xiaoyi", ulname: q.ulname || "", t: Date.now(),
       }));
       await redis.ltrim(rk(code, "feed"), 0, 29);
       await redis.expire(rk(code, "feed"), TTL);
@@ -119,24 +139,31 @@ export default async function handler(req, res) {
     }
 
     if (action === "state") { // Boss 投影端 poll（重）
-      const [hp, players, feedRaw, combo] = await Promise.all([
+      const [hp, players, feedRaw, combo, buff] = await Promise.all([
         redis.get(rk(code, "hp")),
         redis.hgetall(rk(code, "players")),
         redis.lrange(rk(code, "feed"), 0, 29),
         redis.get(rk(code, "combo")),
+        redis.get(rk(code, "buff")),
       ]);
       const feed = (feedRaw || []).map((s) => (typeof s === "string" ? JSON.parse(s) : s));
       return j(res, 200, {
         room, hp: Math.max(0, Number(hp) || 0), combo: Number(combo) || 0,
-        players: players || {}, feed,
+        players: players || {}, feed, buffUntil: Number(buff) || 0,
       });
     }
 
     if (action === "mystate") { // 學生端 poll（輕）
-      const hp = await redis.get(rk(code, "hp"));
+      const name = String(q.name || "").slice(0, 8);
+      const [hp, buff, giftAt] = await Promise.all([
+        redis.get(rk(code, "hp")),
+        redis.get(rk(code, "buff")),
+        name ? redis.hget(rk(code, "gifts"), name) : null,
+      ]);
       return j(res, 200, {
         status: room.status, maxhp: room.maxhp, hp: Math.max(0, Number(hp) || 0),
         habits: room.habits, seed: room.seed, boss: room.boss, slayer: room.slayer || "",
+        buffUntil: Number(buff) || 0, giftAt: Number(giftAt) || 0,
       });
     }
 

@@ -83,10 +83,12 @@ h1{font-size:26px;color:var(--gold);letter-spacing:6px;}
   <h1>眾志成城 · 入陣</h1>
   <input id="codeIn" inputmode="numeric" maxlength="4" placeholder="房號 4 位數">
   <input id="nameIn" maxlength="8" placeholder="你的名號（最多 8 字）">
-  <div class="sub">選一位角色，你的招式將以他之名打出</div>
+  <div class="sub">選一位角色——爆發型獨力輸出、戰意型鼓舞全班、渡氣型支援同袍</div>
   <div id="chGrid"></div>
+  <div class="sub" id="roleHint">蕭逸 · 爆發型 — 大絕 70 傷</div>
   <button class="bigbtn gold" onclick="doJoin()">入 陣</button>
   <div class="sub" id="joinErr" style="color:var(--red)"></div>
+  <div class="sub" id="badgeCnt"></div>
 </div>
 
 <!-- 等待開戰 -->
@@ -127,6 +129,7 @@ h1{font-size:26px;color:var(--gold);letter-spacing:6px;}
   <div class="wcard">
     <div class="wtitle">心 魔 已 斬</div>
     <div id="meSlayer"></div>
+    <div id="wBadge"></div>
     <div class="wl">你的出力：<b id="wDmg"></b> 傷害</div>
     <div class="wl">答對 <b id="wOk"></b> 題 · 答對率 <b id="wAcc"></b></div>
     <div class="wl">放出大絕 <b id="wUlt"></b> 次</div>
@@ -136,32 +139,42 @@ h1{font-size:26px;color:var(--gold);letter-spacing:6px;}
 
 <script src="questions.js"></script>
 <script>
+// role: burst 爆發（大絕 70 傷）/ buff 戰意（30 傷＋全班 +3 三十秒）/ gift 渡氣（30 傷＋兩位同袍氣滿）
 const CHARS={
- xiaoyi:{nm:'蕭逸',atk:'醉仙劍·隨手一撩',ult:'眾心之劍'},
- shenmu:{nm:'沈牧',atk:'太素回春掌',ult:'眾心之劍·醫者渡魔'},
- murongyan:{nm:'慕容嫣',atk:'金帳天羅劍法',ult:'億念一心'},
- bairuoxue:{nm:'白若雪',atk:'噬雪軟劍',ult:'噬雪一念'},
- xuemo:{nm:'血魔老祖',atk:'血煞爪',ult:'血煞之核'},
- shangyu:{nm:'商鈺',atk:'毒掌綠霧',ult:'血償同歸'},
- xueshashi:{nm:'血煞使',atk:'噬魂幡·幡影',ult:'噬魂幡·萬魂噬'},
- licanglan:{nm:'厲滄瀾',atk:'太虛劍訣',ult:'孤雲斷嶽'},
- shinian:{nm:'噬念魔將',atk:'四臂撼地',ult:'怨嚎崩世'}};
+ xiaoyi:{nm:'蕭逸',atk:'醉仙劍·隨手一撩',ult:'眾心之劍',role:'burst'},
+ shenmu:{nm:'沈牧',atk:'太素回春掌',ult:'眾心之劍·醫者渡魔',role:'buff'},
+ murongyan:{nm:'慕容嫣',atk:'金帳天羅劍法',ult:'億念一心',role:'gift'},
+ bairuoxue:{nm:'白若雪',atk:'噬雪軟劍',ult:'噬雪一念',role:'gift'},
+ xuemo:{nm:'血魔老祖',atk:'血煞爪',ult:'血煞之核',role:'burst'},
+ shangyu:{nm:'商鈺',atk:'毒掌綠霧',ult:'血償同歸',role:'burst'},
+ xueshashi:{nm:'血煞使',atk:'噬魂幡·幡影',ult:'噬魂幡·萬魂噬',role:'gift'},
+ licanglan:{nm:'厲滄瀾',atk:'太虛劍訣',ult:'孤雲斷嶽',role:'buff'},
+ shinian:{nm:'噬念魔將',atk:'四臂撼地',ult:'怨嚎崩世',role:'buff'}};
+const ROLES={burst:{tag:'爆發',desc:'大絕 70 傷',clr:'var(--red)'},
+ buff:{tag:'戰意',desc:'大絕 30 傷＋全班 +3（30秒）',clr:'var(--gold)'},
+ gift:{tag:'渡氣',desc:'大絕 30 傷＋兩位同袍氣滿',clr:'var(--jade)'}};
 const $=id=>document.getElementById(id);
 const show=id=>{document.querySelectorAll('.screen').forEach(s=>s.classList.remove('on'));$(id).classList.add('on');};
 
 let ME={code:'',name:'',ch:'xiaoyi'};
-let S={qi:0,streak:0,dmg:0,ok:0,miss:0,ults:0};
+let S={qi:0,streak:0,mstreak:0,dmg:0,ok:0,miss:0,ults:0};
 let deck=[],qi=0,cur=null,locked=false,fighting=false,maxhp=0;
+let buffUntil=0,lastGift=0;
+const buffOn=()=>Date.now()<buffUntil;
 
 // ── 入陣畫面 ──
 $('chGrid').innerHTML=Object.entries(CHARS).map(([k,c],i)=>
  `<button class="pc${i===0?' sel':''}" data-k="${k}" onclick="pickCh('${k}')">
-  <img src="img/chars/${k}.jpg" alt="" onerror="this.remove()"><span class="lb">${c.nm}</span></button>`).join('');
-function pickCh(k){ME.ch=k;document.querySelectorAll('.pc').forEach(p=>p.classList.toggle('sel',p.dataset.k===k));}
+  <img src="img/chars/${k}.jpg" alt="" onerror="this.remove()">
+  <span class="lb">${c.nm}<small style="display:block;font-size:10px;color:${ROLES[c.role].clr}">${ROLES[c.role].tag}型</small></span></button>`).join('');
+function pickCh(k){ME.ch=k;document.querySelectorAll('.pc').forEach(p=>p.classList.toggle('sel',p.dataset.k===k));
+ $('roleHint').textContent=`${CHARS[k].nm} · ${ROLES[CHARS[k].role].tag}型 — ${ROLES[CHARS[k].role].desc}`;}
 const urlC=new URLSearchParams(location.search).get('c');
 if(urlC)$('codeIn').value=urlC;
 const saved=JSON.parse(localStorage.getItem('raid_me')||'null');
 if(saved&&saved.code===urlC){$('nameIn').value=saved.name;pickCh(saved.ch);}
+const _col=JSON.parse(localStorage.getItem('raid_badges')||'[]');
+if(_col.length)$('badgeCnt').textContent=`🎖 你的徽章匣：${_col.length} 枚（${[...new Set(_col.map(x=>x.b))].join('、')}）`;
 
 async function api(body){
  const r=await fetch('/api/raid',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
@@ -216,8 +229,8 @@ async function ans(i){
  [0,1,2,3].forEach(k=>{const b=$('o'+k);b.disabled=true;
   if(cur.c[cur._map[k]].q===0)b.classList.add('ok');});
  if(c.q===0){
-  S.ok++;S.streak++;
-  const dmg=10+(S.streak>=3?5:0);
+  S.ok++;S.streak++;S.mstreak=Math.max(S.mstreak,S.streak);
+  const dmg=10+(S.streak>=3?5:0)+(buffOn()?3:0);
   S.dmg+=dmg;S.qi=Math.min(100,S.qi+20);
   flash(CHARS[ME.ch].atk+'！',false);
   post('atk',dmg);
@@ -235,24 +248,27 @@ async function ans(i){
 
 function fireUlt(){
  if(S.qi<100||!fighting)return;
- S.qi=0;S.ults++;S.dmg+=50;
+ const role=CHARS[ME.ch].role;
+ const dmg=role==='burst'?70:30;
+ S.qi=0;S.ults++;S.dmg+=dmg;
+ if(role==='buff')buffUntil=Date.now()+30000;
  flash(CHARS[ME.ch].ult+'！！',true);
- post('ult',50);
+ post('ult',dmg,role==='burst'?'':role);
  paintMe();
 }
 
-async function post(kind,dmg){
+async function post(kind,dmg,fx){
  try{
-  const r=await api({action:'hit',code:ME.code,name:ME.name,kind,dmg,
+  const r=await api({action:'hit',code:ME.code,name:ME.name,kind,dmg,fx:fx||'',
    ulname:kind==='ult'?CHARS[ME.ch].ult:'',
-   stats:{ch:ME.ch,dmg:S.dmg,ok:S.ok,miss:S.miss,ults:S.ults}});
+   stats:{ch:ME.ch,dmg:S.dmg,ok:S.ok,miss:S.miss,ults:S.ults,mstreak:S.mstreak}});
   if(typeof r.hp==='number')paintBoss(r.hp);
   if(r.slain)showWon(ME.name);
  }catch(e){}
 }
 
 function paintMe(){
- $('mystat').innerHTML=`出力 <b>${S.dmg}</b>${S.streak>=3?` · 🔥連對 ${S.streak}`:''}`;
+ $('mystat').innerHTML=`出力 <b>${S.dmg}</b>${S.streak>=3?` · 🔥連對 ${S.streak}`:''}${buffOn()?' · ⚔️戰意+3':''}`;
  $('qi').style.width=S.qi+'%';
  const ub=$('ultBtn');ub.disabled=S.qi<100;ub.classList.toggle('ready',S.qi>=100);
  ub.textContent=S.qi>=100?'放大絕':'大絕 '+S.qi+'%';
@@ -270,17 +286,38 @@ function flash(txt,ult){
 // ── 輪詢房間狀態 ──
 async function pollLoop(){
  try{
-  const r=await api({action:'mystate',code:ME.code});
+  const r=await api({action:'mystate',code:ME.code,name:ME.name});
   if(!r.error){
    if(r.status==='fight'&&!fighting){startFight({maxhp:r.maxhp,habits:r.habits,seed:r.seed,boss:r.boss});}
    if(fighting&&typeof r.hp==='number')paintBoss(r.hp);
+   if(r.buffUntil>buffUntil){buffUntil=r.buffUntil;flash('全班戰意高漲 +3！',false);paintMe();}
+   if(r.giftAt>lastGift&&fighting){lastGift=r.giftAt;
+    if(S.qi<100){S.qi=100;flash('同袍渡氣——氣力全滿！',false);paintMe();}}
    if(r.status==='won'){showWon(r.slayer);return;}
   }
  }catch(e){}
  setTimeout(pollLoop,2500);
 }
 
-function showWon(slayer){
+// ── 徽章：從全場統計推算，人人有一枚（優先序高→低，一人一枚不重複）──
+function calcBadges(players,slayer){
+ const ps=Object.entries(players).map(([n,p])=>({n,...(p||{})}));
+ const taken=new Set(),out={};
+ const give=(n,b)=>{if(n&&!out[n]){out[n]=b;taken.add(n);}};
+ give(slayer,'⚔️ 斬魔者');
+ const by=(f,min)=>ps.filter(p=>!taken.has(p.n)&&f(p)>=(min||1)).sort((a,b)=>f(b)-f(a))[0];
+ let p;
+ if(p=by(x=>x.dmg||0))give(p.n,'🏆 出力魁首');
+ if(p=by(x=>x.mstreak||0,3))give(p.n,'🔥 連對之王');
+ if(p=by(x=>x.ok||0,3))give(p.n,'⛰️ 堅毅不移');
+ if(p=by(x=>x.ults||0,1))give(p.n,'✨ 仙法傳人');
+ if(p=by(x=>(x.ok||0)+(x.miss||0)>=5?(x.ok||0)/((x.ok||0)+(x.miss||0)):0,0.001))give(p.n,'🎯 百步穿楊');
+ ps.forEach(x=>give(x.n,'🛡️ 眾志勇士'));
+ return out;
+}
+
+async function showWon(slayer){
+ if(!fighting&&$('won').classList.contains('on'))return;
  fighting=false;
  show('won');
  $('meSlayer').textContent=slayer===ME.name?'⚔️ 你是斬魔者——最後一擊出自你手！':'';
@@ -288,6 +325,16 @@ function showWon(slayer){
  $('wOk').textContent=S.ok;
  $('wAcc').textContent=(S.ok+S.miss?Math.round(S.ok/(S.ok+S.miss)*100):0)+'%';
  $('wUlt').textContent=S.ults;
+ // 徽章：抓全場統計算出自己的那一枚，存入本機收藏
+ try{
+  const st=await api({action:'state',code:ME.code});
+  const badge=calcBadges(st.players||{},st.room?.slayer||slayer)[ME.name]||'🛡️ 眾志勇士';
+  const col=JSON.parse(localStorage.getItem('raid_badges')||'[]');
+  col.push({b:badge,boss:st.room?.boss||'',t:Date.now()});
+  localStorage.setItem('raid_badges',JSON.stringify(col));
+  $('wBadge').innerHTML=`<div style="font-size:26px;letter-spacing:3px;color:var(--gold)">${badge}</div>
+   <div class="sub">收入你的徽章匣（已收藏 ${col.length} 枚）</div>`;
+ }catch(e){}
 }
 </script>
 </body>
