@@ -28,6 +28,11 @@ async function saveRoom(code, room) {
 
 export default async function handler(req, res) {
   res.setHeader("Cache-Control", "no-store");
+  // 跨站：允許本傳《凡人煉心訣》呼叫（天下道果計數）
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+  if (req.method === "OPTIONS") return res.status(200).end();
   const q = req.method === "POST" ? req.body || {} : req.query || {};
   const action = q.action;
   const code = String(q.code || "").trim();
@@ -86,6 +91,12 @@ export default async function handler(req, res) {
         camp: Math.min(7, Number(camp) || 0),
         hidden: !!hidden, warcry: warcry || "",
       });
+    }
+
+    if (action === "dao") {
+      // 天下道果：本傳《凡人煉心訣》全服結局解鎖計數
+      const n = q.inc ? await redis.incr("raid:dao") : Number(await redis.get("raid:dao")) || 0;
+      return j(res, 200, { dao: Number(n) || 0 });
     }
 
     if (action === "log") {
