@@ -1,5 +1,5 @@
 // 眾志成城 · 全班共鬥 Boss Raid — 同步層（Upstash Redis REST）
-// action: create / join / start / hit / state / mystate / mvp / warcry / hall / suggest / sqlist / sqjudge
+// action: create / join / start / hit / state / mystate / mvp / warcry / log / hall / suggest / sqlist / sqjudge
 import { Redis } from "@upstash/redis";
 
 const redis = new Redis({
@@ -86,6 +86,12 @@ export default async function handler(req, res) {
         camp: Math.min(7, Number(camp) || 0),
         hidden: !!hidden, warcry: warcry || "",
       });
+    }
+
+    if (action === "log") {
+      if (!cls) return j(res, 400, { error: "缺班名" });
+      const raw = await redis.lrange(ck(cls, "log"), 0, 59);
+      return j(res, 200, { log: (raw || []).map(parseItem) });
     }
 
     if (action === "suggest") {
@@ -256,6 +262,21 @@ export default async function handler(req, res) {
               acc: Math.round(acc * 100), date: room.endAt,
             }));
             await redis.ltrim("raid:hall", 0, 99);
+            // 教師後台：本場每人答題紀錄落庫（每班保留最近 60 場）
+            const roster = Object.entries(players).map(([n, p0]) => {
+              const p = parseItem(p0);
+              return {
+                name: n, ch: p.ch || "", ti: p.ti || "",
+                ok: Number(p.ok) || 0, miss: Number(p.miss) || 0,
+                dmg: Number(p.dmg) || 0, ults: Number(p.ults) || 0,
+              };
+            });
+            await redis.lpush(ck(room.cls, "log"), JSON.stringify({
+              boss: room.boss, len: room.len,
+              secs: Math.round((room.endAt - room.startAt) / 1000),
+              date: room.endAt, slayer: name, roster,
+            }));
+            await redis.ltrim(ck(room.cls, "log"), 0, 59);
           }
         }
       }

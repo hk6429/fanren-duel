@@ -150,6 +150,7 @@ label.hb input{display:none;}
     <button class="chip" onclick="openBoard('hall')">🏆 凌雲殿堂</button>
     <button class="chip" onclick="openBoard('chron')">📜 討伐史冊</button>
     <button class="chip" id="sqBtn" onclick="openBoard('sq')">🖋️ 獻策審題</button>
+<button class="chip" onclick="openBoard('log')">📊 答題後台</button>
   </div>
   <div class="sub" style="font-size:12px"><a href="index.html" style="color:var(--dim)">← 回七訣鬥法</a></div>
 </div>
@@ -426,7 +427,59 @@ async function openBoard(kind){
    :'<div class="sub" style="text-align:center">目前沒有待審題——學生集滿 5 枚徽章即可獻策</div>';
   return;
  }
+ if(kind==='log'){
+  $('bovTitle').textContent=`📊 答題後台${CLS?` · ${CLS}`:''}`;
+  if(!CLS){CLS=$('clsIn').value.trim().slice(0,12);}
+  if(!CLS){body.innerHTML='<div class="sub" style="text-align:center">先在上方輸入班名，才能調出該班紀錄</div>';$('bov').classList.add('on');return;}
+  body.innerHTML='<div class="sub" style="text-align:center">讀取中……</div>';
+  $('bov').classList.add('on');
+  const r=await api({action:'log',cls:CLS});
+  LOGDATA=r.log||[];
+  renderLog('battle');
+  return;
+ }
  $('bov').classList.add('on');
+}
+let LOGDATA=[];
+function renderLog(view){
+ const body=$('bovBody');
+ const tabs=`<div style="display:flex;gap:8px;justify-content:center;margin-bottom:4px">
+  <button class="chip${view==='battle'?' sel':''}" onclick="renderLog('battle')">依場次</button>
+  <button class="chip${view==='stu'?' sel':''}" onclick="renderLog('stu')">依學生</button></div>`;
+ if(!LOGDATA.length){body.innerHTML=tabs+'<div class="sub" style="text-align:center">本班尚無戰績——打贏第一場團戰後，這裡會出現每位學生的答題紀錄</div>';return;}
+ const pct=(ok,miss)=>ok+miss>0?Math.round(ok/(ok+miss)*100):0;
+ if(view==='battle'){
+  body.innerHTML=tabs+LOGDATA.map((g,i)=>{
+   const ok=g.roster.reduce((s,p)=>s+p.ok,0),miss=g.roster.reduce((s,p)=>s+p.miss,0);
+   const d=new Date(g.date);
+   return `<div class="hallrow" style="cursor:pointer" onclick="document.getElementById('lg${i}').style.display=document.getElementById('lg${i}').style.display==='none'?'block':'none'">
+    <span><b>${d.toLocaleDateString('zh-TW')} ${d.toTimeString().slice(0,5)}</b> 斬 ${BOSSES[g.boss]?BOSSES[g.boss].nm:g.boss}</span>
+    <span>${LENL[g.len]||''}戰役 · ${g.roster.length}人 · 全班答對率${pct(ok,miss)}%</span><span class="tm">${fmtT(g.secs)} ▾</span></div>
+   <div id="lg${i}" style="display:none;overflow-x:auto">
+    <table style="width:100%;border-collapse:collapse;font-size:14px;margin:2px 0 10px">
+     <tr style="color:var(--dim)"><th style="text-align:left;padding:4px 8px">俠名</th><th>答對</th><th>答錯</th><th>正確率</th><th>出力</th><th>大絕</th></tr>
+     ${g.roster.slice().sort((a,b)=>pct(b.ok,b.miss)-pct(a.ok,a.miss)).map(p=>
+      `<tr style="border-top:1px solid var(--line)"><td style="text-align:left;padding:4px 8px">${esc(p.name)}${g.slayer===p.name?' ⚔':''}</td>
+       <td style="text-align:center">${p.ok}</td><td style="text-align:center">${p.miss}</td>
+       <td style="text-align:center;color:${pct(p.ok,p.miss)>=85?'var(--jade,#6fae8e)':pct(p.ok,p.miss)<60?'var(--red)':'inherit'}">${pct(p.ok,p.miss)}%</td>
+       <td style="text-align:center">${p.dmg}</td><td style="text-align:center">${p.ults}</td></tr>`).join('')}
+    </table></div>`;
+  }).join('')+'<div class="sub" style="text-align:center">點任一場展開名單 · ⚔＝斬魔者 · 保留最近 60 場</div>';
+ }else{
+  const agg={};
+  LOGDATA.forEach(g=>g.roster.forEach(p=>{
+   const a=agg[p.name]||(agg[p.name]={n:0,ok:0,miss:0,dmg:0,ults:0,last:0});
+   a.n++;a.ok+=p.ok;a.miss+=p.miss;a.dmg+=p.dmg;a.ults+=p.ults;if(g.date>a.last)a.last=g.date;
+  }));
+  const rows=Object.entries(agg).sort((a,b)=>b[1].ok-a[1].ok);
+  body.innerHTML=tabs+`<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:14px">
+   <tr style="color:var(--dim)"><th style="text-align:left;padding:4px 8px">俠名</th><th>場次</th><th>答對</th><th>答錯</th><th>正確率</th><th>總出力</th><th>最近出戰</th></tr>
+   ${rows.map(([n,a])=>`<tr style="border-top:1px solid var(--line)"><td style="text-align:left;padding:4px 8px">${esc(n)}</td>
+    <td style="text-align:center">${a.n}</td><td style="text-align:center">${a.ok}</td><td style="text-align:center">${a.miss}</td>
+    <td style="text-align:center;color:${pct(a.ok,a.miss)>=85?'var(--jade,#6fae8e)':pct(a.ok,a.miss)<60?'var(--red)':'inherit'}">${pct(a.ok,a.miss)}%</td>
+    <td style="text-align:center">${a.dmg}</td><td style="text-align:center">${new Date(a.last).toLocaleDateString('zh-TW')}</td></tr>`).join('')}
+  </table></div><div class="sub" style="text-align:center">依「答對總數」排序 · 同名視為同一人（跨場統計）</div>`;
+ }
 }
 async function judgeSq(i,ap){await api({action:'sqjudge',idx:i,approve:ap});openBoard('sq');loadHall();}
 
