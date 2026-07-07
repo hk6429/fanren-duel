@@ -159,8 +159,9 @@ const show=id=>{document.querySelectorAll('.screen').forEach(s=>s.classList.remo
 let ME={code:'',name:'',ch:'xiaoyi'};
 let S={qi:0,streak:0,mstreak:0,dmg:0,ok:0,miss:0,ults:0};
 let deck=[],qi=0,cur=null,locked=false,fighting=false,maxhp=0;
-let buffUntil=0,lastGift=0;
+let buffUntil=0,lastGift=0,weakUntil=0;
 const buffOn=()=>Date.now()<buffUntil;
+const weakOn=()=>Date.now()<weakUntil;
 
 // ── 入陣畫面 ──
 $('chGrid').innerHTML=Object.entries(CHARS).map(([k,c],i)=>
@@ -230,7 +231,7 @@ async function ans(i){
   if(cur.c[cur._map[k]].q===0)b.classList.add('ok');});
  if(c.q===0){
   S.ok++;S.streak++;S.mstreak=Math.max(S.mstreak,S.streak);
-  const dmg=10+(S.streak>=3?5:0)+(buffOn()?3:0);
+  const dmg=(10+(S.streak>=3?5:0)+(buffOn()?3:0))*(weakOn()?2:1);
   S.dmg+=dmg;S.qi=Math.min(100,S.qi+20);
   flash(CHARS[ME.ch].atk+'！',false);
   post('atk',dmg);
@@ -249,7 +250,7 @@ async function ans(i){
 function fireUlt(){
  if(S.qi<100||!fighting)return;
  const role=CHARS[ME.ch].role;
- const dmg=role==='burst'?70:30;
+ const dmg=(role==='burst'?70:30)*(weakOn()?2:1);
  S.qi=0;S.ults++;S.dmg+=dmg;
  if(role==='buff')buffUntil=Date.now()+30000;
  flash(CHARS[ME.ch].ult+'！！',true);
@@ -268,7 +269,7 @@ async function post(kind,dmg,fx){
 }
 
 function paintMe(){
- $('mystat').innerHTML=`出力 <b>${S.dmg}</b>${S.streak>=3?` · 🔥連對 ${S.streak}`:''}${buffOn()?' · ⚔️戰意+3':''}`;
+ $('mystat').innerHTML=`出力 <b>${S.dmg}</b>${S.streak>=3?` · 🔥連對 ${S.streak}`:''}${buffOn()?' · ⚔️戰意+3':''}${weakOn()?' · ⚡×2':''}`;
  $('qi').style.width=S.qi+'%';
  const ub=$('ultBtn');ub.disabled=S.qi<100;ub.classList.toggle('ready',S.qi>=100);
  ub.textContent=S.qi>=100?'放大絕':'大絕 '+S.qi+'%';
@@ -291,6 +292,7 @@ async function pollLoop(){
    if(r.status==='fight'&&!fighting){startFight({maxhp:r.maxhp,habits:r.habits,seed:r.seed,boss:r.boss});}
    if(fighting&&typeof r.hp==='number')paintBoss(r.hp);
    if(r.buffUntil>buffUntil){buffUntil=r.buffUntil;flash('全班戰意高漲 +3！',false);paintMe();}
+   if(r.weakUntil>weakUntil){weakUntil=r.weakUntil;if(fighting){flash('⚡ 破綻乍現——傷害加倍！',true);paintMe();}}
    if(r.giftAt>lastGift&&fighting){lastGift=r.giftAt;
     if(S.qi<100){S.qi=100;flash('同袍渡氣——氣力全滿！',false);paintMe();}}
    if(r.status==='won'){showWon(r.slayer);return;}

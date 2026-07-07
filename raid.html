@@ -171,7 +171,15 @@ label.hb input{display:none;}
   <div id="feed"></div>
   <div id="elapsed"></div>
   <div id="buffBn">⚔️ 戰意高漲 · 全班傷害 +3</div>
+  <div id="weakBn">⚡ 破 綻 乍 現 · 全班傷害 ×2 <span id="weakSec"></span></div>
 </div>
+<style>
+#weakBn{position:absolute;left:0;right:0;bottom:0;z-index:6;display:none;text-align:center;padding:12px;
+ font-size:28px;letter-spacing:6px;color:#ffd98a;
+ background:linear-gradient(0deg,rgba(201,162,74,.35),transparent);
+ text-shadow:0 0 20px rgba(255,180,94,.9),0 2px 6px #000;animation:cpulse .45s ease-in-out infinite alternate;}
+#fight.weak #bossbg{filter:brightness(1.12) contrast(1.1);}
+</style>
 
 <!-- 開戰儀式 -->
 <div id="rite">
@@ -237,7 +245,7 @@ const $=id=>document.getElementById(id);
 const show=id=>{document.querySelectorAll('.screen').forEach(s=>s.classList.remove('on'));$(id).classList.add('on');};
 
 let sel={boss:'xuemo',len:'mid',habits:new Set([0,1,2,3,4,5,6])};
-let CODE='',ROOM=null,seenT=0,lastHp=null,raging=false,pollTimer=null;
+let CODE='',ROOM=null,seenT=0,lastHp=null,raging=false,weakSeen=false,pollTimer=null;
 
 // ── 建房 UI ──
 $('bossRow').innerHTML=Object.entries(BOSSES).map(([k,b],i)=>
@@ -342,6 +350,14 @@ function renderFight(r){
  $('combo').classList.toggle('hot',r.combo>=6);
  if(!raging&&pct<=50){raging=true;$('fight').classList.add('rage');$('auBgm').playbackRate=1.18;}
  $('buffBn').style.display=(r.buffUntil&&Date.now()<r.buffUntil)?'block':'none';
+ const weakOn=r.weakUntil&&Date.now()<r.weakUntil;
+ if(weakOn&&!weakSeen){weakSeen=true;
+  const au=$('auUlt');au.currentTime=0;au.volume=.85;au.play().catch(()=>{});
+  setTimeout(()=>au.pause(),2500);
+  $('topbar').classList.remove('shake');void $('topbar').offsetWidth;$('topbar').classList.add('shake');}
+ $('weakBn').style.display=weakOn?'block':'none';
+ $('fight').classList.toggle('weak',!!weakOn);
+ if(weakOn)$('weakSec').textContent=`（剩 ${Math.max(0,Math.ceil((r.weakUntil-Date.now())/1000))} 秒）`;
  // 新擊打 → 傷害數字 + feed
  const fresh=r.feed.filter(f=>f.t>seenT).sort((a,b)=>a.t-b.t);
  if(fresh.length)seenT=fresh[fresh.length-1].t;
