@@ -35,6 +35,8 @@ export default async function handler(req, res) {
 
   try {
     if (action === "create") {
+      // 團戰需班名才能開房：遊客（無班名）不建房、不寫資料庫，改玩四個純本機模式
+      if (!cls) return j(res, 400, { error: "請先輸入班名才能開闢戰場（遊客可體驗雙人對戰、闖關等本機模式）" });
       let boss = BOSSES.includes(q.boss) ? q.boss : "xuemo";
       if (boss === "xuemo2") {
         const unlocked = cls ? await redis.get(ck(cls, "hidden")) : null;

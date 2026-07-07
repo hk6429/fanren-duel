@@ -141,7 +141,7 @@ label.hb input{display:none;}
     <button class="chip" data-len="long" onclick="pickLen('long')">長戰役 · 約 13 分鐘</button>
   </div>
   <div class="row">
-    <input id="clsIn" class="tin" placeholder="班名（如 805）" maxlength="12">
+    <input id="clsIn" class="tin" placeholder="班名（必填，如 805）" maxlength="12">
     <input id="cryIn" class="tin" style="width:300px" placeholder="班級戰吼（開戰儀式全班齊喊）" maxlength="40">
   </div>
   <button class="bigbtn gold" onclick="createRoom()">開 闢 戰 場</button>
@@ -433,6 +433,11 @@ async function judgeSq(i,ap){await api({action:'sqjudge',idx:i,approve:ap});open
 // ── 建房 → 大廳 ──
 async function createRoom(){
  CLS=$('clsIn').value.trim().slice(0,12);
+ if(!CLS){
+  $('clsIn').style.borderColor='var(--red)';
+  $('clsIn').placeholder='← 班名必填才能開戰場';
+  $('clsIn').focus();return;
+ }
  localStorage.setItem('raid_cls',CLS);
  const cry=$('cryIn').value.trim().slice(0,40);
  if(CLS&&cry&&cry!==HALL.warcry)api({action:'warcry',cls:CLS,set:cry});
