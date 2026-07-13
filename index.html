@@ -20,7 +20,7 @@ button:active{background:#1d2026;border-color:var(--gold);transform:scale(.97);}
  flex-direction:column;align-items:center;justify-content:center;gap:16px;color:var(--dim);font-size:18px;}
 #rotate .ico{font-size:52px;animation:rot 2s ease-in-out infinite;}
 @keyframes rot{0%,20%{transform:rotate(0)}60%,100%{transform:rotate(90deg)}}
-@media (orientation:portrait){#rotate{display:flex;}}
+/* 2026-07-07 取消橫式強制：直式不再擋畫面（#rotate 覆蓋層保留但永不顯示） */
 /* ── 通用畫面 ── */
 .screen{flex:1;display:none;flex-direction:column;align-items:center;justify-content:center;
  gap:18px;padding:20px;overflow:hidden;}
@@ -81,7 +81,7 @@ h1{font-size:34px;color:var(--gold);letter-spacing:8px;text-shadow:0 0 24px rgba
 #battle.lr .half:last-child{border-left:none;}
 #battle.lr .qtext{font-size:19px;}
 #battle.lr .qopts{grid-template-columns:1fr;} /* 半寬版面改單欄，選項不擠 */
-#battle.lr .qopt{font-size:17px;min-height:56px;}
+#battle.lr .qopt{font-size:16px;min-height:46px;}
 /* 左右模式＝格鬥對峙：只留己方立繪、靠中線面對面（half0=左、half1=右）
    答題區讓出內側 30%，立繪整條直立完整可見 */
 #battle.lr .fig{height:88%;width:36%;bottom:0;aspect-ratio:auto;object-fit:contain;
@@ -130,7 +130,7 @@ h1{font-size:34px;color:var(--gold);letter-spacing:8px;text-shadow:0 0 24px rgba
 .qarea{flex:1;display:flex;flex-direction:column;justify-content:center;gap:8px;min-height:0;}
 .qtext{font-size:21px;line-height:1.5;text-align:center;padding:2px 6px;}
 .qopts{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
-.qopt{min-height:64px;font-size:19px;padding:10px 12px;line-height:1.35;}
+.qopt{min-height:50px;font-size:17px;padding:8px 12px;line-height:1.3;} /* 5 選項制：略縮高度 */
 .qopt.dead{opacity:.4;pointer-events:none;}
 .qopt.right{border-color:var(--jade);color:var(--jade);}
 .qopt.wrong{border-color:var(--red);color:var(--red);}
@@ -242,6 +242,11 @@ h1{font-size:34px;color:var(--gold);letter-spacing:8px;text-shadow:0 0 24px rgba
 <div class="screen" id="home">
   <h1 style="font-size:26px;letter-spacing:6px;">選擇對戰模式</h1>
   <div class="sub" id="rankLine"></div>
+  <div style="display:flex;gap:10px;justify-content:center;align-items:center;margin:2px 0 6px">
+    <span style="color:var(--dim);font-size:13px;letter-spacing:2px">📚 題庫</span>
+    <button id="bankJr" onclick="setBank('jr')">國中版</button>
+    <button id="bankAd" onclick="setBank('ad')">成人版</button>
+  </div>
   <div class="mcards" id="modeRow">
     <button class="mcard gold" onclick="startPick('2p',null,'tb')">
       <img src="img/cutin/murongyan_ult.jpg" alt="" onerror="this.remove()">
@@ -314,6 +319,20 @@ h1{font-size:34px;color:var(--gold);letter-spacing:8px;text-shadow:0 0 24px rgba
 
 </div>
 <script src="questions.js"></script>
+<script src="questions_adult.js"></script>
+<script>
+/* 📚 雙題庫：國中版（預設）／成人版（23 歲職場），localStorage 記選擇 */
+window.DUEL_QS_JR=window.DUEL_QS_JR||window.DUEL_QS;
+window.DUEL_QS=(localStorage.getItem('duel_bank')==='ad'&&window.DUEL_QS_AD)?window.DUEL_QS_AD:window.DUEL_QS_JR;
+function setBank(b){localStorage.setItem('duel_bank',b);
+ window.DUEL_QS=(b==='ad'&&window.DUEL_QS_AD)?window.DUEL_QS_AD:window.DUEL_QS_JR;paintBank();}
+function paintBank(){const cur=(localStorage.getItem('duel_bank')==='ad')?'ad':'jr';
+ [['bankJr','jr'],['bankAd','ad']].forEach(([id,k])=>{const el=document.getElementById(id);if(!el)return;
+  el.style.cssText='padding:6px 16px;border-radius:20px;font-size:14px;letter-spacing:2px;cursor:pointer;'+
+   (cur===k?'background:rgba(232,200,96,.18);border:1px solid var(--gold,#e8c860);color:var(--gold,#e8c860);font-weight:bold'
+           :'background:transparent;border:1px solid rgba(185,148,74,.35);color:var(--dim,#a89468)');});}
+paintBank();
+</script>
 <script>
 /* ═══════════ 角色資料（招式皆出自小說文本）═══════════ */
 const ROSTER={
@@ -556,7 +575,7 @@ function nextQuestion(){if(!G)return;
  renderAll();ticks.forEach(i=>popDmg(i,ptick,false,'☠'));
  if(checkEnd())return;
  if(!G.deck.length)G.deck=shuffle([...Array(DUEL_QS.length).keys()]);
- G.q=DUEL_QS[G.deck.pop()];G.locked=[false,false];G.phase='q';
+ G.q=DUEL_QS[G.deck.pop()];G.locked=[false,false];G.phase='q';G.halfPow=false;
  renderAll();
  if(solo(G.mode))armAI();}
 function armAI(){clearTimeout(G.aiTimer);const cfg=AI_CFG[G.diff];
@@ -564,12 +583,13 @@ function armAI(){clearTimeout(G.aiTimer);const cfg=AI_CFG[G.diff];
  const acc=Math.min(.95,cfg.acc+(G.stageBoost||0));
  G.aiTimer=setTimeout(()=>{if(!G||G.phase!=='q'||G.locked[1])return;
   if(Math.random()<acc)answer(1,G.q.c.findIndex(c=>c.q===0));
-  else{const wrongs=G.q.c.map((c,i)=>i).filter(i=>G.q.c[i].q!==0);
+  else{const wrongs=G.q.c.map((c,i)=>i).filter(i=>G.q.c[i].q>=2);
    answer(1,wrongs[Math.floor(Math.random()*wrongs.length)]);}},t);}
 /* ═══════════ 作答 ═══════════ */
 function answer(side,idx){if(!G||G.phase!=='q'||G.locked[side])return;
  const c=G.q.c[idx],f=G.p[side];
- if(c.q===0){clearTimeout(G.aiTimer);
+ if(c.q<=1){clearTimeout(G.aiTimer); // q0 最佳＝全額攻擊；q1 次佳＝也算對，威力減半
+  G.halfPow=(c.q===1);
   f.stats.right++;f.streak++;f.stats.maxStreak=Math.max(f.stats.maxStreak,f.streak);
   Snd.play('right');G.phase='act';G.actor=side;
   markOpt(side,idx,true);setTimeout(()=>renderAll(),450);
@@ -578,9 +598,9 @@ function answer(side,idx){if(!G||G.phase!=='q'||G.locked[side])return;
   markOpt(side,idx,false);setMsg(side,`<span class="tag">${c.tag}</span>`);
   document.querySelectorAll(`#half${side} .qopt`).forEach(b=>b.classList.add('dead'));
   if(G.locked[0]&&G.locked[1]){clearTimeout(G.aiTimer);setTimeout(()=>revealAndNext(),2400);}}}
-function revealAndNext(){if(!G)return;const ri=G.q.c.findIndex(c=>c.q===0);
- [0,1].forEach(s=>setMsg(s,`正解：「${G.q.c[ri].t}」`));
- setTimeout(()=>nextQuestion(),1700);}
+function revealAndNext(){if(!G)return;const ri=G.q.c.findIndex(c=>c.q===0),si=G.q.c.findIndex(c=>c.q===1);
+ [0,1].forEach(s=>setMsg(s,`正解：「${G.q.c[ri].t}」${si>=0?`<br>次佳：「${G.q.c[si].t}」`:''}`));
+ setTimeout(()=>nextQuestion(),si>=0?2300:1700);}
 function markOpt(side,idx,ok){const el=document.querySelector(`#half${side} .qopt[data-i="${idx}"]`);
  if(el)el.classList.add(ok?'right':'wrong');}
 /* ═══════════ 行動 ═══════════ */
@@ -595,6 +615,7 @@ function act(side,kind){if(!G||G.phase!=='act'||G.actor!==side)return;
  const ctr=CTR[me.key]===op.key;if(ctr)dmg+=3;
  if(G.dmgBoon&&side===0)dmg+=G.dmgBoon;
  if(me.streak>=3)dmg+=(MUT.k==='flow'?4:2);
+ if(G.halfPow){dmg=Math.ceil(dmg/2);} // ◐ 次佳解搶答：這一回合威力減半
  if(me.weak){dmg=Math.ceil(dmg/2);me.weak=false;}
  if(kind==='ult'){me.qi=0;Snd.play('ult');Snd.sting();}else Snd.play('atk');
  cutin(side,ch,mv.n,kind,()=>{
@@ -653,7 +674,7 @@ function qHTML(side){const q=G.q;
    `<button class="qopt${G.locked[side]?' dead':''}" data-i="${i}" onclick="answer(${side},${i})">${c.t}</button>`).join('')}</div>
   <div class="msg" id="msg${side}">${G.locked[side]?'':`搶答！答對者得攻擊權 <span style="color:var(--dim)">｜⚡${MUT.n}</span>`}</div></div>`;}
 function actHTML(side){const f=G.p[side],ch=ROSTER[f.key];
- return `<div class="acts on">
+ return `${G.halfPow?'<div style="text-align:center;color:#e8c860;font-size:13px;letter-spacing:1px;margin-bottom:4px">◐ 次佳解——方向對了，差一層火候，此回合招式威力減半</div>':''}<div class="acts on">
   <button class="act" onclick="act(${side},'atk')">👊 ${ch.atk.n}<small>傷害 ${ch.atk.d}＋集氣 12</small></button>
   <button class="act" onclick="act(${side},'sp')">✨ ${ch.sp.n}<small>${ch.sp.hint}</small></button>
   <button class="act charge" onclick="act(${side},'charge')">🌀 集氣<small>氣＋50（兩次集滿）</small></button>
@@ -753,5 +774,6 @@ function rematch(){const ps=pickState;if(!ps)return goHome();
  startBattle();}
 function repick(){const ps=pickState;if(ps)startPick(ps.mode,ps.diff,ps.layout);else goHome();}
 </script>
+<script defer src="https://naicheng-counter.vercel.app/counter.js" data-site="fanren-duel"></script>
 </body>
 </html>

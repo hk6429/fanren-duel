@@ -158,6 +158,7 @@ select{font-family:inherit;background:var(--bg2);border:1px solid var(--line);bo
     <button class="opt" id="o1" onclick="ans(1)"></button>
     <button class="opt" id="o2" onclick="ans(2)"></button>
     <button class="opt" id="o3" onclick="ans(3)"></button>
+<button class="opt" id="o4" onclick="ans(4)" style="display:none"></button>
     <div id="msg"></div>
     <button class="bigbtn" id="nextBtn" style="display:none" onclick="nextQ()">下一題 →</button>
   </div>
@@ -215,6 +216,10 @@ select{font-family:inherit;background:var(--bg2);border:1px solid var(--line);bo
 </style>
 
 <script src="questions.js"></script>
+<script src="questions_adult.js"></script>
+<script>/* 📚 雙題庫：跟主站同一把 localStorage 鑰匙 */
+window.DUEL_QS_JR=window.DUEL_QS_JR||window.DUEL_QS;
+window.DUEL_QS=(localStorage.getItem('duel_bank')==='ad'&&window.DUEL_QS_AD)?window.DUEL_QS_AD:window.DUEL_QS_JR;</script>
 <script>
 // role: burst 爆發（大絕 70 傷）/ buff 戰意（30 傷＋全班 +3 三十秒）/ gift 渡氣（30 傷＋兩位同袍氣滿）
 const CHARS={
@@ -363,25 +368,27 @@ function nextQ(){
  if(qi>=deck.length)qi=0;
  cur=deck[qi++];locked=false;
  $('qtext').textContent=cur.text;
- // 選項順序打散
- const idx=[0,1,2,3].sort(()=>Math.random()-.5);
+ // 選項順序打散（4 或 5 選項皆可：同學獻策題 4 選項、正式題庫 5 選項）
+ const idx=[...cur.c.keys()].sort(()=>Math.random()-.5);
  cur._map=idx;
- idx.forEach((ci,i)=>{const b=$('o'+i);b.textContent=cur.c[ci].t;
-  b.className='opt';b.disabled=false;b.style.display='';});
+ [0,1,2,3,4].forEach(i=>{const b=$('o'+i);if(!b)return;
+  if(i<idx.length){b.textContent=cur.c[idx[i]].t;b.className='opt';b.disabled=false;b.style.display='';}
+  else{b.style.display='none';}});
  $('msg').innerHTML='';$('nextBtn').style.display='none';
 }
 
 async function ans(i){
  if(locked||!cur)return;locked=true;
  const c=cur.c[cur._map[i]];
- [0,1,2,3].forEach(k=>{const b=$('o'+k);b.disabled=true;
-  if(cur.c[cur._map[k]].q===0)b.classList.add('ok');});
- if(c.q===0){
+ cur._map.forEach((ci,k)=>{const b=$('o'+k);if(!b)return;b.disabled=true;
+  if(cur.c[ci].q===0)b.classList.add('ok');});
+ if(c.q<=1){ // q0 最佳＝全額；q1 次佳＝也算對，傷害減半
   S.ok++;S.streak++;S.mstreak=Math.max(S.mstreak,S.streak);
   // 行為牌修正：thickskin 普攻−2 / chainlust 連對加成翻倍 / fastqi 集氣+30
   const base=TRAITK==='thickskin'?8:10;
   const chain=TRAITK==='chainlust'?10:5;
-  const dmg=(base+(S.streak>=3?chain:0)+(buffOn()?3:0))*(weakOn()?2:1);
+  let dmg=(base+(S.streak>=3?chain:0)+(buffOn()?3:0))*(weakOn()?2:1);
+  if(c.q===1)dmg=Math.ceil(dmg/2);
   S.dmg+=dmg;S.qi=Math.min(100,S.qi+(TRAITK==='fastqi'?30:20));
   flash(CHARS[ME.ch].atk+'！',false);
   post('atk',dmg);
@@ -563,5 +570,6 @@ async function voteMvp(btn,who){
  await api({action:'mvp',code:ME.code,for:who});
 }
 </script>
+<script defer src="https://naicheng-counter.vercel.app/counter.js" data-site="fanren-duel"></script>
 </body>
 </html>
